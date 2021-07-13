@@ -1,0 +1,9 @@
+[submodule "dependencies/raylib"]
+	path = dependencies/raylib
+	url = git@github.com:Julianiolo/raylib
+[submodule "dependencies/imgui"]
+	path = dependencies/imgui
+	url = git@github.com:ocornut/imgui
+[submodule "dependencies/eigen"]
+	path = dependencies/eigen
+	url = git@gitlab.com:libeigen/eigen
