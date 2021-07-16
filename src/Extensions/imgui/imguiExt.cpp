@@ -23,7 +23,7 @@ bool imguiExt::imguiColorPickerButton(const char* name, ImVec4& color, ImVec2 si
         ImGui::OpenPopup((nameStr + "_edit_popup").c_str());
     }
     ImGui::SameLine();
-    ImGui::Text(name);
+    ImGui::TextUnformatted(name);
 
     if (ImGui::BeginPopup((nameStr + "_edit_popup").c_str())) {
         changed = ImGui::ColorPicker4(name, (float*)&color, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreview);

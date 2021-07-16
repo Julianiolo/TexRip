@@ -203,7 +203,7 @@ namespace TexRip {
         bool needsReRender = false;
 
         ImageTargetViewer(const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
-        ~ImageTargetViewer();
+        ~ImageTargetViewer(); 
 
         void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, const std::vector<ImgRec>& recs);
         bool save();

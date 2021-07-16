@@ -17,7 +17,8 @@
 #include "oneHeaderLibs/VectorOperators.h"
 //#include "fromJeffMTestframe/Application/platform_tools.h"
 
-#include "utils\overrideStack.h"
+
+#include "utils/overrideStack.h"
 #include "external/glfw/include/GLFW/glfw3.h"
 
 #define println(x) std::cout << x << std::endl;
@@ -31,9 +32,7 @@ int frameCnt = 0;
 Vector2 lastMousePos;
 Vector2 mouseDelta;
 
-TexRip::TexRipper texrip;
-
-TextureViewer* t;
+TexRip::TexRipper* texrip;
 
 int main(void) {
     setup();
@@ -69,11 +68,13 @@ void setup() {
     Input::init();
 
     //PlatformTools::SetWindowHandle(GetWindowHandleNative());
-
-    texrip.addImage("Thing", LoadTexture("assets/ressources/img2.png"));
+    texrip = new TexRip::TexRipper();
+    texrip->addImage("Thing", LoadTexture("assets/ressources/img2.png"));
     std::cout << GetWorkingDirectory() << std::endl;
     //t = new TextureViewer("sepp");
     //t->setTex(LoadTexture("../img2.png"));
+
+
 }
 
 void draw() {
@@ -87,7 +88,7 @@ void draw() {
     BeginRLImGui();
 
     //ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_Once);
-    texrip.draw();
+    texrip->draw();
     //t->draw(GetMousePosition(), mouseDelta);
 
     ImGui::DockSpaceOverViewport();
@@ -103,6 +104,7 @@ void draw() {
 }
 
 void destroy() {
+    delete texrip;
     ShutdownRLImGui();
     ShaderManager::destroy();
     CloseWindow();

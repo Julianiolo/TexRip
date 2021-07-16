@@ -2,6 +2,9 @@
 /build/*
 /ignore/*
 
+#ignore imgui ini files
+*.ini
+
 /projects/VS2019/TexRip/build/*
 /projects/VS2019/TexRip/obj/*
 /projects/VS2019/TexRip/.vs/*
