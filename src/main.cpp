@@ -73,7 +73,7 @@ void draw() {
     TexRip::TexRipper::draw();
     //t->draw(GetMousePosition(), mouseDelta);
 
-    //ImGui::ShowDemoWindow(NULL);
+    ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
     lastMousePos = GetMousePosition();

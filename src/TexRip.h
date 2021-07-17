@@ -177,6 +177,7 @@ namespace TexRip {
 
         const Texture& getInvMats() const;
 
+        void drawMenuBarFile();
     protected:
         void drawMenuBar() override;
         bool ownUpdate(const Vector2& mousePos, const Vector2& mouseDelta) override;
@@ -216,6 +217,9 @@ namespace TexRip {
         bool save();
         bool saveAs();
         bool editedSinceSaved();
+
+        void drawMenuBarFile();
+        void drawMenuBarSettings();
     protected:
         void drawMenuBar() override;
         void afterWinDraw() override;
@@ -244,11 +248,13 @@ namespace TexRip {
         void floatWinView();
 
         bool toDelete = false;
-        void close();
-    protected:
         bool winOpen = true;
+        void close();
+
+        ImGuiID externalDockSpaceID;
+    protected:
         bool parentWinOpen = true;
-        ImGuiWindowFlags parentWinFlags = ImGuiWindowFlags_None;
+        ImGuiWindowFlags parentWinFlags = ImGuiWindowFlags_MenuBar;
         ImGuiID parentDockSpaceID;
 
         void update();
@@ -265,10 +271,6 @@ namespace TexRip {
         static Vector2 lastMousePos;
         static Vector2 mouseDelta;
 
-        static bool drawnOnce;
-
-        static ImGuiID dockspaceID;
-
         static std::vector<ImageRipperWindow*> wins;
 
         struct DroppedFile {
@@ -276,21 +278,33 @@ namespace TexRip {
             std::string ext;
             std::string path;
         };
-
         static std::vector<DroppedFile> droppedFileNames;
+
+        static bool settingsWinOpen;
 
         static void openFileName(const char* name);
         static void drawDroppedFilesMenu();
 
-        
-        static int winViewMode;
-        static int wantWinViewMode;
+        class WinViewManager {
+        public:
+            static size_t activeWin;
+            static bool winOpen;
 
-        static void updateWinView();
+            static int winViewMode;
+            static int wantWinViewMode;
 
-        static void dockedWinView();
-        static void oneWinView();
-        static void floatWinView();
+            static void updateWinView(bool dockspaceActive);
+
+            static void dockedWinView();
+            static void oneWinView();
+            static void floatWinView();
+
+            static void drawWin();
+        };
+        static ImageRipperWindow* getActiveWin();
+
+        static void drawMainMenuBar();
+        static void drawSettingsWindow();
     public:
         static void init();
         static void destroy();
