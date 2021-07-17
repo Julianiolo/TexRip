@@ -39,6 +39,13 @@ namespace TexRip {
         Rectangle boundingBox() const;
     };
 
+    enum WinViewModes {
+        DOCKED = 0,
+        ONE,
+        FLOAT
+    };
+    typedef int WinViewMode;
+
     class ImageRipChildWin : public TextureViewer {
     public:
         ImageRipChildWin(Texture2D tex_, const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None, bool doAdjZoom = true);
@@ -232,6 +239,7 @@ namespace TexRip {
         void setTex(Texture2D newTex);
         void draw(const Vector2& mousePos, const Vector2& mouseDelta);
 
+        void dockedWinView();
         void oneWinView();
         void floatWinView();
 
@@ -240,6 +248,7 @@ namespace TexRip {
     protected:
         bool winOpen = true;
         bool parentWinOpen = true;
+        ImGuiWindowFlags parentWinFlags = ImGuiWindowFlags_None;
         ImGuiID parentDockSpaceID;
 
         void update();
@@ -253,10 +262,14 @@ namespace TexRip {
 
     class TexRipper {
     protected:
-        Vector2 lastMousePos;
-        Vector2 mouseDelta;
+        static Vector2 lastMousePos;
+        static Vector2 mouseDelta;
 
-        std::vector<ImageRipperWindow*> wins;
+        static bool drawnOnce;
+
+        static ImGuiID dockspaceID;
+
+        static std::vector<ImageRipperWindow*> wins;
 
         struct DroppedFile {
             std::string name;
@@ -264,15 +277,26 @@ namespace TexRip {
             std::string path;
         };
 
-        std::vector<DroppedFile> droppedFileNames;
+        static std::vector<DroppedFile> droppedFileNames;
 
-        void openFileName(const char* name);
-        void drawDroppedFilesMenu();
+        static void openFileName(const char* name);
+        static void drawDroppedFilesMenu();
+
+        
+        static int winViewMode;
+        static int wantWinViewMode;
+
+        static void updateWinView();
+
+        static void dockedWinView();
+        static void oneWinView();
+        static void floatWinView();
     public:
-        ~TexRipper();
+        static void init();
+        static void destroy();
 
-        void draw();
-        void addImage(const char* name, const Texture2D& tex);
+        static void draw();
+        static void addImage(const char* name, const Texture2D& tex);
     };
 }
 

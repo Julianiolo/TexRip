@@ -57,6 +57,9 @@
     <ClCompile Include="..\..\..\..\src\rlImGui\rlImGui.cpp">
       <Filter>Source Files\rlImGui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\src\utils\utilsEigen.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\ImGuiImageViewers.h">

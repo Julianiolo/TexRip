@@ -77,7 +77,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(RepoRoot)build\VS2019\$(Platform)\$(Configuration)\TexRip\</OutDir>
-    <IntDir>$(SolutionDir)obs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\objs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -86,7 +86,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(RepoRoot)build\VS2019\$(Platform)\$(Configuration)\TexRip\</OutDir>
-    <IntDir>$(SolutionDir)obs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\objs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -95,7 +95,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(RepoRoot)build\VS2019\$(Platform)\$(Configuration)\TexRip\</OutDir>
-    <IntDir>$(SolutionDir)obs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\objs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -104,7 +104,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(RepoRoot)build\VS2019\$(Platform)\$(Configuration)\TexRip\</OutDir>
-    <IntDir>$(SolutionDir)obs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\objs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -220,6 +220,7 @@
     <ClCompile Include="..\..\..\..\src\shaders.cpp" />
     <ClCompile Include="..\..\..\..\src\TexRip.cpp" />
     <ClCompile Include="..\..\..\..\src\utils\utils.cpp" />
+    <ClCompile Include="..\..\..\..\src\utils\utilsEigen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\Extensions\imgui\imguiExts.h" />

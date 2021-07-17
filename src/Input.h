@@ -1,6 +1,7 @@
 #ifndef _INPUT
 
 #include <stdint.h>
+#include <string>
 
 class Input {
 public:
@@ -39,7 +40,9 @@ public:
 private:
 	struct ActionStrct {
 		int key;
+		int localKey;
 		Modifier modifiers;
+		std::string keyName;
 	};
 
 	static ActionStrct actionsArr[Action_COUNT];
@@ -47,10 +50,12 @@ private:
 
 	static void initActionsArrToDefault();
 	static void initDefaultActionsArr();
+	static void setDefaultAction(Action a, int key, Modifier mods);
 
 	static Modifier getModifiers();
 
 	static int toLocalKey(int key);
+	static void generateActionKeyName(ActionStrct* a);
 public:
 	static void init();
 
@@ -63,6 +68,8 @@ public:
 	static bool modAlt();
 
 	static bool isActionActive(Action action, ActionState actionState = ActionState_Pressed);
+
+	static const std::string& getActionKeyName(Action action);
 
 	static void changeActionBinding(Action action, int key, Modifier mods);
 	static void setActionBindingToDefault(Action action);

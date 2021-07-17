@@ -1,6 +1,10 @@
 #include "Input.h"
 #include "raylib.h"
-#include "external/glfw/include/GLFW/glfw3.h"
+#include "utils/utils.h"
+
+#if defined(PLATFORM_DESKTOP)
+	#include "external/glfw/include/GLFW/glfw3.h"
+#endif
 
 int Input::mainMouseB() {
 	return MOUSE_BUTTON_LEFT;
@@ -34,11 +38,20 @@ Input::Modifier Input::getModifiers() {
 }
 
 int Input::toLocalKey(int key) {
-	char k = glfwGetKeyName(key, 0)[0];
-	if (k >= 'a' && k <= 'z') {
-		k -= 'a' - 'A';
+#if defined(PLATFORM_DESKTOP)
+	if (isprint(key)) {
+		char k = glfwGetKeyName(key, 0)[0];
+		if (k >= 'a' && k <= 'z') {
+			k -= 'a' - 'A';
+		}
+		return k;
 	}
-	return k;
+	else {
+		return key;
+	}
+#else
+	return key;
+#endif
 }
 
 Input::ActionStrct Input::actionsArr[Input::Action_COUNT];
@@ -49,29 +62,40 @@ void Input::init() {
 	initActionsArrToDefault();
 }
 
-void Input::initActionsArrToDefault() {
+inline void Input::initActionsArrToDefault() {
 	for (int i = 0; i < Action_COUNT; i++) {
 		actionsArr[i] = actionsArrDefault[i];
 	}
 }
+inline void Input::initDefaultActionsArr() {
+	setDefaultAction(Action_move,   KEY_G, Modifier_None);
+	setDefaultAction(Action_rotate, KEY_R, Modifier_None);
+	setDefaultAction(Action_scale,  KEY_S, Modifier_None);
 
-void Input::initDefaultActionsArr() {
-	actionsArrDefault[Action_move] = { KEY_G, Modifier_None};
-	actionsArrDefault[Action_rotate] = { KEY_R, Modifier_None};
-	actionsArrDefault[Action_scale] = { KEY_S, Modifier_None};
+	setDefaultAction(Action_selectAll, KEY_A, Modifier_None);
+	setDefaultAction(Action_selectLinked, KEY_L, Modifier_None);
 
-	actionsArrDefault[Action_selectAll] = { KEY_A, Modifier_None};
-	actionsArrDefault[Action_selectLinked] = { KEY_L, Modifier_None};
+	setDefaultAction(Action_add, KEY_A, Modifier_Shift);
 
-	actionsArrDefault[Action_add] = { KEY_A, Modifier_Shift};
+	setDefaultAction(Action_undo, KEY_Z, Modifier_Ctrl);
+	setDefaultAction(Action_save, KEY_S, Modifier_Ctrl);
+	setDefaultAction(Action_open, KEY_O, Modifier_Ctrl);
+}
+void Input::setDefaultAction(Action a, int key, Modifier mods) {
+	actionsArrDefault[a] = {key, toLocalKey(key), mods};
+	generateActionKeyName(&actionsArrDefault[a]);
+}
 
-	actionsArrDefault[Action_undo] = { KEY_Z, Modifier_Ctrl};
-	actionsArrDefault[Action_save] = { KEY_S, Modifier_Ctrl};
-	actionsArrDefault[Action_open] = { KEY_O, Modifier_Ctrl};
+void Input::generateActionKeyName(ActionStrct* a) {
+	std::string out = "";
+	if (a->modifiers & Modifier_Ctrl)
+		out += "CTRL+";
+	if (a->modifiers & Modifier_Alt)
+		out += "ALT+";
+	if (a->modifiers & Modifier_Shift)
+		out += "SHIFT+";
 
-	for (size_t i = 0; i < Action_COUNT; i++) {
-		actionsArrDefault[i].key = toLocalKey(actionsArrDefault[i].key);
-	}
+	a->keyName = out + utils::getKeyStr(a->localKey);
 }
 
 bool Input::isActionActive(Action action, ActionState actionState) {
@@ -81,27 +105,48 @@ bool Input::isActionActive(Action action, ActionState actionState) {
 		return false;
 	}
 
+	int key = acStrct.localKey;
+
 	switch (actionState) {
 		case ActionState_Pressed:
-			return IsKeyPressed(acStrct.key);
+			return IsKeyPressed(key);
 		case ActionState_Released:
-			return IsKeyReleased(acStrct.key);
+			return IsKeyReleased(key);
 		case ActionState_Down:
-			return IsKeyDown(acStrct.key);
+			return IsKeyDown(key);
 		case ActionState_Up:
-			return IsKeyPressed(acStrct.key);
+			return IsKeyPressed(key);
 	}
 	return false;
 }
 
+const std::string& Input::getActionKeyName(Action action) {
+	return actionsArr[action].keyName;
+}
+
 void Input::changeActionBinding(Action action, int key, Modifier mods) {
-	actionsArr[action] = ActionStrct{toLocalKey(key), mods};
+	actionsArr[action] = ActionStrct{key,toLocalKey(key), mods};
+	generateActionKeyName(&actionsArr[action]);
 }
 void Input::setActionBindingToDefault(Action action) {
 	actionsArr[action] = actionsArrDefault[action];
 }
 
 /*
+
+actionsArrDefault[Action_move] = { KEY_G, Modifier_None};
+actionsArrDefault[Action_rotate] = { KEY_R, Modifier_None};
+actionsArrDefault[Action_scale] = { KEY_S, Modifier_None};
+
+actionsArrDefault[Action_selectAll] = { KEY_A, Modifier_None};
+actionsArrDefault[Action_selectLinked] = { KEY_L, Modifier_None};
+
+actionsArrDefault[Action_add] = { KEY_A, Modifier_Shift};
+
+actionsArrDefault[Action_undo] = { KEY_Z, Modifier_Ctrl};
+actionsArrDefault[Action_save] = { KEY_S, Modifier_Ctrl};
+actionsArrDefault[Action_open] = { KEY_O, Modifier_Ctrl};
+
 bool Input::selAll() {
 	return IsKeyPressed(KEY_A);
 }

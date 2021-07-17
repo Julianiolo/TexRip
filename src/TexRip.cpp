@@ -690,7 +690,7 @@ TexRip::ImageSelectionViewer::~ImageSelectionViewer(){
 void TexRip::ImageSelectionViewer::drawMenuBar() {
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Open")) {
+            if (ImGui::MenuItem("Open", Input::getActionKeyName(Input::Action_open).c_str())) {
                 openFile();
             }
             ImGui::EndMenu();
@@ -916,7 +916,7 @@ void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const
 void TexRip::ImageTargetViewer::drawMenuBar() {
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Save")) {
+            if (ImGui::MenuItem("Save", Input::getActionKeyName(Input::Action_save).c_str())) {
                 save();
             }
             if (ImGui::MenuItem("Save As")) {
@@ -1015,13 +1015,6 @@ void TexRip::ImageRipperWindow::setTex(Texture2D newTex) {
     reRenderOutput();
 }
 void TexRip::ImageRipperWindow::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
-    if (IsKeyPressed(KEY_U)) {
-        oneWinView();
-    }
-    if (IsKeyPressed(KEY_I)) {
-        floatWinView();
-    }
-
     if (parentWinOpen) {
         drawParentWin();
     }
@@ -1036,6 +1029,10 @@ void TexRip::ImageRipperWindow::draw(const Vector2& mousePos, const Vector2& mou
     }
 }
 
+void TexRip::ImageRipperWindow::dockedWinView() {
+    oneWinView();
+    parentWinFlags |= ImGuiWindowFlags_NoMove;
+}
 void TexRip::ImageRipperWindow::oneWinView() {
     parentWinOpen = true;
 
@@ -1043,28 +1040,14 @@ void TexRip::ImageRipperWindow::oneWinView() {
     ImGuiID leftID = -1, rightID = -1;
     auto cNode = ImGui::DockBuilderGetNode(centralNode);
 
-    bool isAlreadyDone = false;
     if (cNode->IsSplitNode()) {
-        if (selWin.winProps.dockID != cNode->ChildNodes[0]->ID || texWin.winProps.dockID != cNode->ChildNodes[1]->ID) {
-            ImGui::DockBuilderRemoveNodeChildNodes(centralNode);
-        }
-        else {
-            isAlreadyDone = true;
-        }
+        ImGui::DockBuilderRemoveNodeChildNodes(centralNode);
     }
 
-    if (!isAlreadyDone) {
-        ImGui::DockBuilderSplitNode(centralNode, ImGuiDir_Left, 0.5f, &leftID, &rightID);
+    ImGui::DockBuilderSplitNode(centralNode, ImGuiDir_Left, 0.5f, &leftID, &rightID);
 
-        if (selWin.winProps.dockID != leftID) {
-
-            ImGui::DockBuilderDockWindow(selWin.winProps.windowName.c_str(), leftID);
-        }
-        if (texWin.winProps.dockID != rightID) {
-
-            ImGui::DockBuilderDockWindow(texWin.winProps.windowName.c_str(), rightID);
-        }
-    }
+    ImGui::DockBuilderDockWindow(selWin.winProps.windowName.c_str(), leftID);
+    ImGui::DockBuilderDockWindow(texWin.winProps.windowName.c_str(), rightID);
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize; // //ImGuiWindowFlags_NoDecoration ImGuiWindowFlags_NoTitleBar
     selWin.addWindowFlags(flags);
@@ -1075,8 +1058,9 @@ void TexRip::ImageRipperWindow::oneWinView() {
     texWin.reAdjCamToTex();
     selWin.acceptIOKeyCombs = false;
     texWin.acceptIOKeyCombs = false;
-}
 
+    parentWinFlags &= ~ImGuiWindowFlags_NoMove;
+}
 void TexRip::ImageRipperWindow::floatWinView() {
     parentWinOpen = false;
 
@@ -1096,15 +1080,15 @@ void TexRip::ImageRipperWindow::floatWinView() {
 
 void TexRip::ImageRipperWindow::drawParentWin() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    if (ImGui::Begin(name.c_str(), &winOpen, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(name.c_str(), &winOpen, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | parentWinFlags)) { //ImGuiWindowFlags_NoBringToFrontOnFocus
         ImGui::PopStyleVar();
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Open")) {
+                if (ImGui::MenuItem("Open", Input::getActionKeyName(Input::Action_open).c_str())) {
                     selWin.openFile();
                 }
                 ImGui::Separator();
-                if (ImGui::MenuItem("Save")) {
+                if (ImGui::MenuItem("Save", Input::getActionKeyName(Input::Action_save).c_str())) {
                     texWin.save();
                 }
                 if (ImGui::MenuItem("Save As")) {
@@ -1174,7 +1158,21 @@ void TexRip::ImageRipperWindow::close() {
 
 // ###############################################################################################################################
 
-TexRip::TexRipper::~TexRipper() {
+Vector2 TexRip::TexRipper::lastMousePos = { 0,0 };
+Vector2 TexRip::TexRipper::mouseDelta = { 0,0 };
+bool TexRip::TexRipper::drawnOnce = false;
+ImGuiID TexRip::TexRipper::dockspaceID = 0;
+
+std::vector<TexRip::ImageRipperWindow*> TexRip::TexRipper::wins;
+std::vector<TexRip::TexRipper::DroppedFile> TexRip::TexRipper::droppedFileNames;
+
+int TexRip::TexRipper::winViewMode = -1;
+int TexRip::TexRipper::wantWinViewMode = -1;
+
+void TexRip::TexRipper::init() {
+    wantWinViewMode = WinViewModes::DOCKED;
+}
+void TexRip::TexRipper::destroy() {
     for (auto& w : wins) {
         delete w;
     }
@@ -1182,6 +1180,21 @@ TexRip::TexRipper::~TexRipper() {
 
 void TexRip::TexRipper::draw() {
     mouseDelta = GetMousePosition() - lastMousePos;
+
+    if (IsKeyPressed(KEY_U)) {
+        wantWinViewMode = WinViewModes::DOCKED;
+    }
+    if (IsKeyPressed(KEY_I)) {
+        wantWinViewMode = WinViewModes::ONE;
+    }
+    if (IsKeyPressed(KEY_P)) {
+        wantWinViewMode = WinViewModes::FLOAT;
+    }
+
+    if (winViewMode == WinViewModes::DOCKED || wantWinViewMode == WinViewModes::DOCKED) {
+        dockspaceID = ImGui::DockSpaceOverViewport();
+    }
+    updateWinView();
 
     if (IsFileDropped()) {
         char** paths;
@@ -1217,6 +1230,7 @@ void TexRip::TexRipper::draw() {
     }
     
     lastMousePos = GetMousePosition();
+    drawnOnce = true;
 }
 
 void TexRip::TexRipper::openFileName(const char* name) {
@@ -1262,6 +1276,44 @@ void TexRip::TexRipper::drawDroppedFilesMenu() {
         }
     }
     ImGui::End();
+}
+
+void TexRip::TexRipper::updateWinView() {
+    if (wantWinViewMode != -1 && drawnOnce) {
+        switch (wantWinViewMode) {
+            case WinViewModes::DOCKED:
+                dockedWinView();
+                break;
+            case WinViewModes::ONE:
+                oneWinView();
+                break;
+            case WinViewModes::FLOAT:
+                floatWinView();
+                break;
+        }
+        wantWinViewMode = 0;
+    }
+}
+
+void TexRip::TexRipper::dockedWinView() {
+    winViewMode = WinViewModes::DOCKED;
+    for (auto& w : wins) {
+        w->dockedWinView();
+        ImGui::DockBuilderDockWindow(w->name.c_str(), dockspaceID);
+    }
+}
+void TexRip::TexRipper::oneWinView() {
+    winViewMode = WinViewModes::ONE;
+    ImGui::DockBuilderRemoveNodeChildNodes(dockspaceID);
+    for (auto& w : wins) {
+        w->oneWinView();
+    }
+}
+void TexRip::TexRipper::floatWinView() {
+    winViewMode = WinViewModes::FLOAT;
+    for (auto& w : wins) {
+        w->floatWinView();
+    }
 }
 
 void TexRip::TexRipper::addImage(const char* name, const Texture2D& tex) {

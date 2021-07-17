@@ -4,22 +4,12 @@
 
 #include "raylib.h"
 #include "imgui.h"
-//#include "utils.h"
 #include "rlImGui/rlImGui.h"
-//#include "opencv2/imgproc.hpp"
-//#include "opencv2/imgcodecs.hpp"
-//#include "ImGuiImageViewers.h"
 #include "TexRip.h"
 #include "Input.h"
-
-#include "rlgl.h"
 #include "shaders.h"
 #include "oneHeaderLibs/VectorOperators.h"
 //#include "fromJeffMTestframe/Application/platform_tools.h"
-
-
-#include "utils/overrideStack.h"
-#include "external/glfw/include/GLFW/glfw3.h"
 
 #define println(x) std::cout << x << std::endl;
 
@@ -31,8 +21,6 @@ int frameCnt = 0;
 
 Vector2 lastMousePos;
 Vector2 mouseDelta;
-
-TexRip::TexRipper* texrip;
 
 int main(void) {
     setup();
@@ -50,7 +38,6 @@ void setup() {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(1200, 800, "TexRip");
     
-    //glfwSetWindowSizeCallback(glfwGetCurrentContext(), framebuffer_size_callback); //glfwSetFramebufferSizeCallback
     SetWindowResizeDrawCallback(draw);
     SetTargetFPS(60);
 
@@ -68,15 +55,10 @@ void setup() {
     Input::init();
 
     //PlatformTools::SetWindowHandle(GetWindowHandleNative());
-    texrip = new TexRip::TexRipper();
-    texrip->addImage("Thing", LoadTexture("assets/ressources/img2.png"));
+    TexRip::TexRipper::init();
+    TexRip::TexRipper::addImage("Thing", LoadTexture("assets/ressources/img2.png"));
     std::cout << GetWorkingDirectory() << std::endl;
-    //t = new TextureViewer("sepp");
-    //t->setTex(LoadTexture("../img2.png"));
-
-
 }
-
 void draw() {
     BeginDrawing();
 
@@ -88,12 +70,10 @@ void draw() {
     BeginRLImGui();
 
     //ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_Once);
-    texrip->draw();
+    TexRip::TexRipper::draw();
     //t->draw(GetMousePosition(), mouseDelta);
 
-    ImGui::DockSpaceOverViewport();
-
-    ImGui::ShowDemoWindow(NULL);
+    //ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
     lastMousePos = GetMousePosition();
@@ -102,9 +82,8 @@ void draw() {
 
     frameCnt++;
 }
-
 void destroy() {
-    delete texrip;
+    TexRip::TexRipper::destroy();
     ShutdownRLImGui();
     ShaderManager::destroy();
     CloseWindow();
@@ -190,8 +169,6 @@ int main(void)
     return 0;
 }
 #endif
-
-
 
 /*
 

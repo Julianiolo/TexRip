@@ -3,7 +3,6 @@
 
 #include "raylib.h"
 #include "imgui.h"
-//#include "opencv2/opencv.hpp"
 #include <string>
 
 class World2DViewer {
