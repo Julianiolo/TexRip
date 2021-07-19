@@ -1,5 +1,4 @@
 #if 1
-
 #include <iostream>
 
 #include "raylib.h"
@@ -64,7 +63,6 @@ void draw() {
 
     mouseDelta = GetMousePosition() - lastMousePos;
 
-
     ClearBackground(DARKGRAY);
 
     BeginRLImGui();
@@ -73,7 +71,7 @@ void draw() {
     TexRip::TexRipper::draw();
     //t->draw(GetMousePosition(), mouseDelta);
 
-    ImGui::ShowDemoWindow(NULL);
+    //ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
     lastMousePos = GetMousePosition();
@@ -141,7 +139,7 @@ int main(void)
 
     return 0;
 }
-#elif 1
+#elif 0
 #include "raylib.h"
 
 int main(void)
@@ -168,6 +166,53 @@ int main(void)
 
     return 0;
 }
+
+#elif 1
+#include "imgui.h"
+#include "raylib.h"
+#include "rlImGui/rlImGui.h"
+
+int main(void)
+{
+    const int screenWidth = 1400;
+    const int screenHeight = 700;
+
+    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+
+    SetTargetFPS(60);
+
+    SetupRLImGui(true);
+
+    while (!WindowShouldClose())
+    {
+        BeginDrawing();
+
+        BeginRLImGui();
+
+        ClearBackground(RAYWHITE);
+
+        if (ImGui::Begin("shush")) {
+            ImGui::TextUnformatted("SHUUUUUUUUSH");
+        }
+        ImGui::End();
+
+        if (ImGui::Begin("shush")) {
+            ImGui::TextUnformatted("LUUUUUUL");
+        }
+        ImGui::End();
+
+        //DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+
+        EndRLImGui();
+
+        EndDrawing();
+    }
+
+    CloseWindow();
+
+    return 0;
+}
+
 #endif
 
 /*

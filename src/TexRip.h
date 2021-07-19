@@ -39,12 +39,7 @@ namespace TexRip {
         Rectangle boundingBox() const;
     };
 
-    enum WinViewModes {
-        DOCKED = 0,
-        ONE,
-        FLOAT
-    };
-    typedef int WinViewMode;
+    
 
     class ImageRipChildWin : public TextureViewer {
     public:
@@ -287,19 +282,26 @@ namespace TexRip {
 
         class WinViewManager {
         public:
+            enum WinViewModes {
+                DOCKED = 0,
+                ONE,
+                FLOAT
+            };
+            typedef int WinViewMode;
+
             static size_t activeWin;
             static bool winOpen;
 
             static int winViewMode;
-            static int wantWinViewMode;
 
-            static void updateWinView(bool dockspaceActive);
+            static bool changed;
 
-            static void dockedWinView();
-            static void oneWinView();
-            static void floatWinView();
+            static void updateBefore();
+            static void updateWinView();
 
             static void drawWin();
+
+            static void queueViewMode(WinViewMode mode);
         };
         static ImageRipperWindow* getActiveWin();
 
