@@ -1,6 +1,7 @@
 #include "Input.h"
 #include "raylib.h"
 #include "utils/utils.h"
+#include "imgui.h"
 
 #if defined(PLATFORM_DESKTOP)
 	#include "external/glfw/include/GLFW/glfw3.h"
@@ -55,7 +56,6 @@ int Input::toLocalKey(int key) {
 }
 
 Input::ActionStrct Input::actionsArr[Input::Action_COUNT];
-Input::ActionStrct Input::actionsArrDefault[Input::Action_COUNT];
 
 void Input::init() {
 	initDefaultActionsArr();
@@ -64,9 +64,15 @@ void Input::init() {
 
 inline void Input::initActionsArrToDefault() {
 	for (int i = 0; i < Action_COUNT; i++) {
-		actionsArr[i] = actionsArrDefault[i];
+		actionsArr[i].changed = actionsArr[i].def;
 	}
 }
+
+#define setDefaultAction(action, key, mods) \
+	actionsArr[action].def = {key, toLocalKey(key), mods}; \
+	actionsArr[action].def.keyName = generateActionKeyName(actionsArr[action].def); \
+	actionsArr[action].label = std::string(#action).replace(0,7,"");
+	
 inline void Input::initDefaultActionsArr() {
 	setDefaultAction(Action_move,   KEY_G, Modifier_None);
 	setDefaultAction(Action_rotate, KEY_R, Modifier_None);
@@ -81,31 +87,27 @@ inline void Input::initDefaultActionsArr() {
 	setDefaultAction(Action_save, KEY_S, Modifier_Ctrl);
 	setDefaultAction(Action_open, KEY_O, Modifier_Ctrl);
 }
-void Input::setDefaultAction(Action a, int key, Modifier mods) {
-	actionsArrDefault[a] = {key, toLocalKey(key), mods};
-	generateActionKeyName(&actionsArrDefault[a]);
-}
 
-void Input::generateActionKeyName(ActionStrct* a) {
+std::string Input::generateActionKeyName(const ActionStrctKeys& a) {
 	std::string out = "";
-	if (a->modifiers & Modifier_Ctrl)
+	if (a.modifiers & Modifier_Ctrl)
 		out += "CTRL+";
-	if (a->modifiers & Modifier_Alt)
+	if (a.modifiers & Modifier_Alt)
 		out += "ALT+";
-	if (a->modifiers & Modifier_Shift)
+	if (a.modifiers & Modifier_Shift)
 		out += "SHIFT+";
 
-	a->keyName = out + utils::getKeyStr(a->localKey);
+	return out + utils::getKeyStr(a.localKey);
 }
 
 bool Input::isActionActive(Action action, ActionState actionState) {
-	ActionStrct& acStrct = actionsArr[action];
-	Modifier currentMods = getModifiers();
-	if (!((currentMods & acStrct.modifiers) == acStrct.modifiers)) { // modifiers are not satisfied
+	const ActionStrct& acStrct = actionsArr[action];
+	const Modifier currentMods = getModifiers();
+	if (!((currentMods & acStrct.changed.modifiers) == acStrct.changed.modifiers)) { // modifiers are not satisfied
 		return false;
 	}
 
-	int key = acStrct.localKey;
+	int key = acStrct.changed.localKey;
 
 	switch (actionState) {
 		case ActionState_Pressed:
@@ -121,18 +123,56 @@ bool Input::isActionActive(Action action, ActionState actionState) {
 }
 
 const std::string& Input::getActionKeyName(Action action) {
-	return actionsArr[action].keyName;
+	return actionsArr[action].changed.keyName;
 }
 
 void Input::changeActionBinding(Action action, int key, Modifier mods) {
 	actionsArr[action] = ActionStrct{key,toLocalKey(key), mods};
-	generateActionKeyName(&actionsArr[action]);
+	actionsArr[action].changed.keyName = generateActionKeyName(actionsArr[action].changed);
 }
 void Input::setActionBindingToDefault(Action action) {
-	actionsArr[action] = actionsArrDefault[action];
+	actionsArr[action].changed = actionsArr[action].def;
+}
+
+void Input::drawSettingsTable() {
+	ImGuiTableFlags flags = 
+		ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_PadOuterX | ImGuiTableFlags_BordersV;
+
+	if (ImGui::BeginTable("Key Actions Table", 3, flags)) {
+		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableSetupColumn("Binding", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableHeadersRow();
+
+		for (size_t i = 0; i < Action_COUNT; i++) { //ImGui::AlignTextToFramePadding();
+			ActionStrct& a = actionsArr[i];
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(a.label.c_str());
+
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(a.changed.keyName.c_str());
+			
+			ImGui::TableNextColumn();
+			if (ImGui::Button("Change")) {
+
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Default")) {
+				setActionBindingToDefault(i);
+			}
+		}
+		ImGui::EndTable();
+	}
 }
 
 /*
+
+void Input::setDefaultAction(Action a, int key, Modifier mods) {
+actionsArrDefault[a] = {key, toLocalKey(key), mods};
+generateActionKeyName(&actionsArrDefault[a]);
+}
 
 actionsArrDefault[Action_move] = { KEY_G, Modifier_None};
 actionsArrDefault[Action_rotate] = { KEY_R, Modifier_None};

@@ -39,14 +39,14 @@ namespace TexRip {
         Rectangle boundingBox() const;
     };
 
-    
-
     class ImageRipChildWin : public TextureViewer {
     public:
         ImageRipChildWin(Texture2D tex_, const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None, bool doAdjZoom = true);
         ImageRipChildWin(const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None, bool doAdjZoom = true);
 
         bool acceptIOKeyCombs = true;
+
+        void setWinDocked(bool docked);
     };
 
     class ImageSelectionViewer : public ImageRipChildWin {
@@ -243,11 +243,14 @@ namespace TexRip {
         void floatWinView();
 
         bool toDelete = false;
-        bool winOpen = true;
+        
+        bool isWinOpen();
+        void tryClose();
         void close();
 
         ImGuiID externalDockSpaceID;
     protected:
+        bool winOpen = true;
         bool parentWinOpen = true;
         ImGuiWindowFlags parentWinFlags = ImGuiWindowFlags_MenuBar;
         ImGuiID parentDockSpaceID;

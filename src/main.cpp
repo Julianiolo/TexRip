@@ -71,7 +71,7 @@ void draw() {
     TexRip::TexRipper::draw();
     //t->draw(GetMousePosition(), mouseDelta);
 
-    //ImGui::ShowDemoWindow(NULL);
+    ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
     lastMousePos = GetMousePosition();
@@ -168,6 +168,32 @@ int main(void)
 }
 
 #elif 1
+#include "raylib.h"
+#include <iostream>
+
+int main(void)
+{
+    const int screenWidth = 1400;
+    const int screenHeight = 700;
+
+    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+
+    SetTargetFPS(60);
+
+    Texture t = LoadTexture("assets/ressources/img2.png");
+
+    if (t.id > 0) {
+        std::cout << t.id << std::endl;
+    }
+
+    UnloadTexture(t);
+
+    CloseWindow();
+
+    return 0;
+}
+
+#elif 0
 #include "imgui.h"
 #include "raylib.h"
 #include "rlImGui/rlImGui.h"

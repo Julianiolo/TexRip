@@ -38,24 +38,29 @@ public:
 	};
 
 private:
-	struct ActionStrct {
+	struct ActionStrctKeys {
 		int key;
 		int localKey;
 		Modifier modifiers;
 		std::string keyName;
 	};
 
+	struct ActionStrct {
+		ActionStrctKeys def;
+		ActionStrctKeys changed;
+		std::string label;
+	};
+	
+
 	static ActionStrct actionsArr[Action_COUNT];
-	static ActionStrct actionsArrDefault[Action_COUNT];
 
 	static void initActionsArrToDefault();
 	static void initDefaultActionsArr();
-	static void setDefaultAction(Action a, int key, Modifier mods);
 
 	static Modifier getModifiers();
 
 	static int toLocalKey(int key);
-	static void generateActionKeyName(ActionStrct* a);
+	static std::string generateActionKeyName(const ActionStrctKeys& a);
 public:
 	static void init();
 
@@ -73,6 +78,8 @@ public:
 
 	static void changeActionBinding(Action action, int key, Modifier mods);
 	static void setActionBindingToDefault(Action action);
+
+	static void drawSettingsTable();
 };
 
 #endif // !_INPUT
