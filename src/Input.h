@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 class Input {
 public:
@@ -49,6 +50,21 @@ private:
 		ActionStrctKeys def;
 		ActionStrctKeys changed;
 		std::string label;
+	};
+
+	class ActionKeyCapture {
+	private:
+		static bool active;
+		static ActionStrctKeys captured;
+		static Action target;
+		static std::string str;
+		static bool finished;
+
+		static void stopCapture(bool cancel);
+	public:
+		static void startCapture(Action targ);
+
+		static void captureKeys();
 	};
 	
 

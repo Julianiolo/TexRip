@@ -279,6 +279,13 @@ namespace TexRip {
         static std::vector<DroppedFile> droppedFileNames;
 
         static bool settingsWinOpen;
+        static size_t currentSettingCategory;
+        enum SettingsCategories_ {
+            SettingsCategories_General = 0,
+            SettingsCategories_Key_Bindings,
+            SettingsCategories_COUNT
+        };
+        static std::string settingsCategories[];
 
         static void openFileName(const char* name);
         static void drawDroppedFilesMenu();

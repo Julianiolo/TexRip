@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "utils/utils.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #if defined(PLATFORM_DESKTOP)
 	#include "external/glfw/include/GLFW/glfw3.h"
@@ -131,7 +132,7 @@ const std::string& Input::getActionKeyName(Action action) {
 }
 
 void Input::changeActionBinding(Action action, int key, Modifier mods) {
-	actionsArr[action] = ActionStrct{key,toLocalKey(key), mods};
+	actionsArr[action].changed = ActionStrctKeys{key,toLocalKey(key), mods};
 	actionsArr[action].changed.keyName = generateActionKeyName(actionsArr[action].changed);
 }
 void Input::setActionBindingToDefault(Action action) {
@@ -146,6 +147,7 @@ void Input::drawSettingsTable() {
 	ImGuiTableFlags flags = 
 		ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_PadOuterX | ImGuiTableFlags_BordersV;
 
+	Action act = -1;
 	if (ImGui::BeginTable("Key Actions Table", 3, flags)) {
 		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
 		ImGui::TableSetupColumn("Binding", ImGuiTableColumnFlags_WidthStretch);
@@ -164,16 +166,98 @@ void Input::drawSettingsTable() {
 			
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Change")) {
-
+				act = i;
 			}
 			ImGui::SameLine();
+			bool isAlreadyDefault = (a.changed.key == a.def.key) && (a.changed.modifiers == a.def.modifiers);
+			if (isAlreadyDefault)
+				ImGui::PushDisabled();
 			if (ImGui::Button("Default")) {
 				setActionBindingToDefault(i);
 			}
+			if (isAlreadyDefault)
+				ImGui::PopDisabled();
 		}
 		ImGui::EndTable();
 	}
+	if (act != -1) {
+		ActionKeyCapture::startCapture(act);
+	}
+
+	ActionKeyCapture::captureKeys();
 }
+
+bool Input::ActionKeyCapture::active = false;
+Input::ActionStrctKeys Input::ActionKeyCapture::captured;
+Input::Action Input::ActionKeyCapture::target = -1;
+bool Input::ActionKeyCapture::finished = false;
+
+void Input::ActionKeyCapture::captureKeys() {
+	if (active) {
+		if (!finished) {
+			int key;
+			bool changed = false;
+			while (key = GetKeyPressed()) {
+				changed = true;
+				if (key < 255 && isprint(key)) {
+					finished = true;
+					captured.key = key;
+					captured.localKey = toLocalKey(key);
+					break;
+				}
+				else {
+					if (key == KEY_LEFT_SHIFT || key == KEY_RIGHT_SHIFT)
+						captured.modifiers |= Modifier_Shift;
+					if (key == KEY_LEFT_CONTROL || key == KEY_RIGHT_CONTROL)
+						captured.modifiers |= Modifier_Ctrl;
+					if (key == KEY_LEFT_ALT || key == KEY_RIGHT_ALT)
+						captured.modifiers |= Modifier_Alt;
+				}
+			}
+			if (changed) {
+				captured.keyName = generateActionKeyName(captured);
+			}
+		}
+	}
+
+	if (ImGui::BeginPopupModal("Enter Keys", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::TextUnformatted(captured.keyName.c_str());
+
+		if (!finished)
+			ImGui::PushDisabled();
+		if (ImGui::Button("Ok", ImVec2(120, 0))) {
+			stopCapture(false);
+			ImGui::CloseCurrentPopup();
+		}
+		if (!finished)
+			ImGui::PopDisabled();
+
+		ImGui::SetItemDefaultFocus();
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			stopCapture(true);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+}
+
+void Input::ActionKeyCapture::startCapture(Action targ) {
+	enableInput(false);
+	active = true;
+	finished = false;
+	target = targ;
+	captured = { 0,0,0,"" };
+	ImGui::OpenPopup("Enter Keys");
+}
+void Input::ActionKeyCapture::stopCapture(bool cancel) {
+	enableInput(true);
+	active = false;
+	if(!cancel)
+		changeActionBinding(target, captured.key, captured.modifiers);
+}
+
+
 
 /*
 

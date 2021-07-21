@@ -1304,8 +1304,14 @@ bool TexRip::TexRipper::settingsWinOpen = false;
 std::vector<TexRip::ImageRipperWindow*> TexRip::TexRipper::wins;
 std::vector<TexRip::TexRipper::DroppedFile> TexRip::TexRipper::droppedFileNames;
 
+size_t TexRip::TexRipper::currentSettingCategory = 0;
+std::string TexRip::TexRipper::settingsCategories[SettingsCategories_COUNT];
+
 void TexRip::TexRipper::init() {
     WinViewManager::queueViewMode(WinViewManager::WinViewModes::DOCKED);
+
+    settingsCategories[SettingsCategories_General] = "General";
+    settingsCategories[SettingsCategories_Key_Bindings] = "KeyBindings";
 }
 void TexRip::TexRipper::destroy() {
     for (auto& w : wins) {
@@ -1451,7 +1457,28 @@ void TexRip::TexRipper::drawMainMenuBar() {
 void TexRip::TexRipper::drawSettingsWindow() {
     if (settingsWinOpen) {
         if (ImGui::Begin("Settings", &settingsWinOpen, 0)) {
-            Input::drawSettingsTable();
+            if (ImGui::BeginListBox("listbox 1")) {
+                for (int n = 0; n < SettingsCategories_COUNT; n++)
+                {
+                    const bool is_selected = (currentSettingCategory == n);
+                    if (ImGui::Selectable(settingsCategories[n].c_str(), is_selected))
+                        currentSettingCategory = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndListBox();
+            }
+
+            switch (currentSettingCategory) {
+                case SettingsCategories_General:
+                    break;
+                case SettingsCategories_Key_Bindings:
+                    Input::drawSettingsTable();
+                    break;
+            }
+            
         }
         ImGui::End();
     }
