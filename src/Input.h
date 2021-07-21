@@ -53,6 +53,7 @@ private:
 	
 
 	static ActionStrct actionsArr[Action_COUNT];
+	static bool inputEnabled;
 
 	static void initActionsArrToDefault();
 	static void initDefaultActionsArr();
@@ -78,6 +79,8 @@ public:
 
 	static void changeActionBinding(Action action, int key, Modifier mods);
 	static void setActionBindingToDefault(Action action);
+
+	static void enableInput(bool enable);
 
 	static void drawSettingsTable();
 };

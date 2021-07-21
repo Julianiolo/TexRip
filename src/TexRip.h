@@ -284,20 +284,22 @@ namespace TexRip {
         static void drawDroppedFilesMenu();
 
         class WinViewManager {
+        private:
+            
+            typedef int WinViewMode;
+
+            static size_t activeWinID;
+            static bool winOpen;
+
+            static int winViewMode;
+
+            static bool changed;
         public:
             enum WinViewModes {
                 DOCKED = 0,
                 ONE,
                 FLOAT
             };
-            typedef int WinViewMode;
-
-            static size_t activeWin;
-            static bool winOpen;
-
-            static int winViewMode;
-
-            static bool changed;
 
             static void updateBefore();
             static void updateWinView();
@@ -305,6 +307,8 @@ namespace TexRip {
             static void drawWin();
 
             static void queueViewMode(WinViewMode mode);
+            static void reQueueViewMode();
+            static size_t getActiveWinID();
         };
         static ImageRipperWindow* getActiveWin();
 

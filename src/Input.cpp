@@ -18,13 +18,13 @@ int Input::midMouseB() {
 }
 
 bool Input::modShift() {
-	return IsKeyDown(KEY_LEFT_SHIFT);
+	return inputEnabled && IsKeyDown(KEY_LEFT_SHIFT);
 }
 bool Input::modCtrl() {
-	return IsKeyDown(KEY_LEFT_CONTROL);
+	return inputEnabled && IsKeyDown(KEY_LEFT_CONTROL);
 }
 bool Input::modAlt() {
-	return IsKeyDown(KEY_LEFT_ALT);
+	return inputEnabled && IsKeyDown(KEY_LEFT_ALT);
 }
 
 Input::Modifier Input::getModifiers() {
@@ -56,6 +56,7 @@ int Input::toLocalKey(int key) {
 }
 
 Input::ActionStrct Input::actionsArr[Input::Action_COUNT];
+bool Input::inputEnabled = true;
 
 void Input::init() {
 	initDefaultActionsArr();
@@ -68,11 +69,11 @@ inline void Input::initActionsArrToDefault() {
 	}
 }
 
-#define setDefaultAction(action, key, mods) \
+#define setDefaultAction(action, key, mods) {\
 	actionsArr[action].def = {key, toLocalKey(key), mods}; \
 	actionsArr[action].def.keyName = generateActionKeyName(actionsArr[action].def); \
-	actionsArr[action].label = std::string(#action).replace(0,7,"");
-	
+	actionsArr[action].label = std::string(#action).replace(0,7,"");\
+}
 inline void Input::initDefaultActionsArr() {
 	setDefaultAction(Action_move,   KEY_G, Modifier_None);
 	setDefaultAction(Action_rotate, KEY_R, Modifier_None);
@@ -101,6 +102,9 @@ std::string Input::generateActionKeyName(const ActionStrctKeys& a) {
 }
 
 bool Input::isActionActive(Action action, ActionState actionState) {
+	if (!inputEnabled)
+		return false;
+
 	const ActionStrct& acStrct = actionsArr[action];
 	const Modifier currentMods = getModifiers();
 	if (!((currentMods & acStrct.changed.modifiers) == acStrct.changed.modifiers)) { // modifiers are not satisfied
@@ -132,6 +136,10 @@ void Input::changeActionBinding(Action action, int key, Modifier mods) {
 }
 void Input::setActionBindingToDefault(Action action) {
 	actionsArr[action].changed = actionsArr[action].def;
+}
+
+void Input::enableInput(bool enable) {
+	inputEnabled = enable;
 }
 
 void Input::drawSettingsTable() {

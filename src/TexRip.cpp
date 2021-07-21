@@ -1171,7 +1171,7 @@ void TexRip::ImageRipperWindow::close() {
 
 int TexRip::TexRipper::WinViewManager::winViewMode = -1;
 
-size_t TexRip::TexRipper::WinViewManager::activeWin = 0;
+size_t TexRip::TexRipper::WinViewManager::activeWinID = 0;
 bool TexRip::TexRipper::WinViewManager::winOpen = false;
 
 bool TexRip::TexRipper::WinViewManager::changed = false;
@@ -1233,6 +1233,12 @@ void TexRip::TexRipper::WinViewManager::queueViewMode(WinViewMode mode) {
     }
     changed = true;
 }
+void TexRip::TexRipper::WinViewManager::reQueueViewMode() {
+    queueViewMode(winViewMode);
+}
+size_t TexRip::TexRipper::WinViewManager::getActiveWinID() {
+    return activeWinID;
+}
 
 void TexRip::TexRipper::WinViewManager::drawWin() {
     if (winOpen) {
@@ -1245,7 +1251,6 @@ void TexRip::TexRipper::WinViewManager::drawWin() {
         if (ImGui::Begin("WINS", NULL, WinFlags)) {
             //ImGui::SetCursorPos({ ImGui::GetCursorPosX(), 0 }); 
             ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_FittingPolicyScroll | ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_Reorderable; // ImGuiTabBarFlags_AutoSelectNewTabs
-            size_t selWin = -1;
             if (ImGui::BeginTabBar("WindowContainerTabBar", tabFlags)){
                 for (size_t i = 0; i < wins.size(); i++) {
                     ImageRipperWindow* win = wins[i];
@@ -1258,7 +1263,7 @@ void TexRip::TexRipper::WinViewManager::drawWin() {
 
                     bool open = true;
                     if (ImGui::BeginTabItem(win->name.c_str(), &open, tabItemFlags)) {
-                        selWin = i;
+                        activeWinID = i;
                         ImGui::EndTabItem();
                     }
 
@@ -1268,14 +1273,16 @@ void TexRip::TexRipper::WinViewManager::drawWin() {
                 ImGui::EndTabBar();
             }
 
+
+            ImVec2 size = ImGui::GetContentRegionAvail();
             for (int i = 0; i < wins.size(); i++) {
                 ImageRipperWindow* win = wins[i];
 
                 ImGuiDockNodeFlags dockFlags = ImGuiDockNodeFlags_NoTabBar;
-                if (i != selWin) {
+                if (i != activeWinID && !changed) { // && !changed is used to activate every dockspace on the first frame the docked mode is enabled to prevent issues with never used dockspaces
                     dockFlags |= ImGuiDockNodeFlags_KeepAliveOnly;
                 }
-                win->externalDockSpaceID = ImGui::DockSpace(ImGui::GetID((win->name + "ext").c_str()), ImGui::GetContentRegionAvail(), dockFlags);
+                win->externalDockSpaceID = ImGui::DockSpace(ImGui::GetID((win->name + "ext").c_str()), size, dockFlags);
             }
         }
         ImGui::End();
@@ -1287,7 +1294,7 @@ void TexRip::TexRipper::WinViewManager::drawWin() {
 // #
 
 TexRip::ImageRipperWindow* TexRip::TexRipper::getActiveWin() {
-    return wins[WinViewManager::activeWin];
+    return wins[WinViewManager::getActiveWinID()];
 }
 
 Vector2 TexRip::TexRipper::lastMousePos = { 0,0 };
@@ -1453,6 +1460,8 @@ void TexRip::TexRipper::drawSettingsWindow() {
 void TexRip::TexRipper::addImage(const char* name, const Texture2D& tex) {
     ImageRipperWindow* win = new ImageRipperWindow(tex, name);
     wins.push_back(win);
+
+    WinViewManager::reQueueViewMode();
 }
 
 /*
