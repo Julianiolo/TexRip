@@ -31,3 +31,18 @@ bool imguiExt::imguiColorPickerButton(const char* name, ImVec4& color, ImVec2 si
     }
     return changed;
 }
+
+void imguiExt::TextUnformattedCentered(const char* text) {
+    float contentWidth = ImGui::GetContentRegionAvail().x;
+    auto textWidth   = ImGui::CalcTextSize(text).x;
+
+    ImGui::SetCursorPosX((contentWidth - textWidth) * 0.5f);
+    ImGui::TextUnformatted(text);
+}
+void imguiExt::TextColoredCentered(const ImVec4& color, const char* text) {
+    float contentWidth = ImGui::GetContentRegionAvail().x;
+    auto textWidth   = ImGui::CalcTextSize(text).x;
+
+    ImGui::SetCursorPosX((contentWidth - textWidth) * 0.5f);
+    ImGui::TextColored(color,text);
+}

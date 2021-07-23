@@ -74,6 +74,8 @@ void draw() {
     ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
+    TexRip::TexRipper::debugDraw();
+
     lastMousePos = GetMousePosition();
 
     EndDrawing();

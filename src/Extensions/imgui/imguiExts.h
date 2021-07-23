@@ -11,6 +11,8 @@ namespace imguiExt {
 	Color rlVec4toColor(const Vector4& c);
 
 	bool imguiColorPickerButton(const char* name, ImVec4& color, ImVec2 size = { 50,0 });
+	void TextUnformattedCentered(const char* text);
+	void TextColoredCentered(const ImVec4& color, const char* text);
 }
 
 #endif

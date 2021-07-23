@@ -9,6 +9,7 @@
 #include "Input.h"
 #include "rlgl.h"
 #include "Extensions/imgui/imguiExts.h"
+#include <cmath>
 
 //#include "fromJeffMTestframe/Application/platform_tools.h"
 
@@ -218,6 +219,7 @@ bool TexRip::ImageSelectionViewer::RectManager::addRectConstr() {
 
     mode = MODES::CONSTRUCT;
     worldMayMove = true;
+    needsMatUpdateForce = true;
     return true;
 }
 
@@ -297,9 +299,10 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
         }
     }
 
-    if (needsMatUpdate) {
+    if (needsMatUpdate || needsMatUpdateForce) {
+        updateRecMats(texSize, needsMatUpdateForce);
         needsMatUpdate = false;
-        updateRecMats(texSize);
+        needsMatUpdateForce = false;
         reRender = true;
     }
 
@@ -541,7 +544,7 @@ TexRip::ImageSelectionViewer::RectManager::RectPntID TexRip::ImageSelectionViewe
     float minDist = INFINITY;
     int nearest = -1;
     int backup = -1;
-    for (int r = 0; r < recs.size();r++) {
+    for (size_t r = 0; r < recs.size();r++) {
         for (int p = 0; p < 4;p++) {
             if (recs[r].pnts[p].candidate) {
                 float dist = Vector2Distance(mousePosTexRel, recs[r].pnts[p].pos); // TODO replace with distSq
@@ -580,7 +583,7 @@ Vector2 TexRip::ImageSelectionViewer::RectManager::getMeanSelPntPos(int& numRef)
             }
         }
     }
-    sum /= num;
+    sum /= (float)num;
     numRef = num;
     return sum;
 }
@@ -606,7 +609,7 @@ TexRip::ImgPoint& TexRip::ImageSelectionViewer::RectManager::getRecPntFromID(Rec
     return recs[id >> 2].pnts[id & 0b11];
 }
 
-void TexRip::ImageSelectionViewer::RectManager::updateRecMats(const Vector2& texSize) { // returns true if at least 1 rect mat got updated
+void TexRip::ImageSelectionViewer::RectManager::updateRecMats(const Vector2& texSize, bool forceTexUpdate) { // returns true if at least 1 rect mat got updated
     bool wasUpdated = false;
     for (auto& r : recs) {
         if (r.progress == ImgRec::Prog_FULL) {
@@ -620,13 +623,13 @@ void TexRip::ImageSelectionViewer::RectManager::updateRecMats(const Vector2& tex
         }
     }
 
-    if (wasUpdated) {
+    if (wasUpdated || forceTexUpdate) {
         matsTex.updateWithRecs(recs, false);
         invMatsTex.updateWithRecs(recs, true);
     }
 }
 
-const std::vector<TexRip::ImgRec>& TexRip::ImageSelectionViewer::RectManager::getRecs() {
+std::vector<TexRip::ImgRec>& TexRip::ImageSelectionViewer::RectManager::getRecs() {
     return recs;
 }
 void TexRip::ImageSelectionViewer::RectManager::addRect(const TexRip::ImgRec& rect) {
@@ -711,10 +714,6 @@ bool TexRip::ImageSelectionViewer::ownUpdate(const Vector2& mousePos, const Vect
     return managePoints(mousePos,mouseDelta);
 }
 void TexRip::ImageSelectionViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
-    rlPushMatrix();
-    Vector2 off = getPosTexToWin({ 0,0 });
-    rlTranslatef(off.x, off.y, 0);
-
     for (auto& r : rectManager.getRecs()) {
         drawRec(r, { 200,200,200,255 }, {255, 185, 64, 255}, BLACK, ORANGE);
     }
@@ -746,8 +745,6 @@ void TexRip::ImageSelectionViewer::drawOverlay(const Vector2& mousePos, const Ve
             DrawLineEx(rectManager.getSclCenter(), getPosWinToTex(getPosGlobalToWin(mousePos)), zoomIndependent(1), GRAY);
         }break;
     }
-
-    rlPopMatrix();
 }
 void TexRip::ImageSelectionViewer::afterWinDraw() {
     if (winProps.isWinHovered && acceptIOKeyCombs) {
@@ -757,7 +754,7 @@ void TexRip::ImageSelectionViewer::afterWinDraw() {
     }
 }
 
-const std::vector<TexRip::ImgRec>& TexRip::ImageSelectionViewer::getRecs() {
+std::vector<TexRip::ImgRec>& TexRip::ImageSelectionViewer::getRecs() {
     return rectManager.getRecs();
 }
 
@@ -784,15 +781,15 @@ void TexRip::ImageSelectionViewer::drawRec(const ImgRec& rec, Color lineC, Color
     if (rec.progress == ImgRec::Prog_FULL) {
         constexpr float step = 1.0f / 5;
         for (float x = step/2; x < 1; x += step) {
-            Vector2 p1 = {x*tex.width,0};
-            Vector2 p2 = {x*tex.width,1*tex.height};
+            Vector2 p1 = {x*(float)tex.width,                   0};
+            Vector2 p2 = {x*(float)tex.width, 1*(float)tex.height};
             Vector2 p1Warped = getPosPersp2(p1, rec.inv_persp);
             Vector2 p2Warped = getPosPersp2(p2, rec.inv_persp);
             DrawLineEx(p1Warped, p2Warped, 2, GREEN);
         }
         for (float y = step/2; y < 1; y += step) {
-            Vector2 p1 = {0*tex.width,y*tex.height};
-            Vector2 p2 = {1*tex.width,y*tex.height};
+            Vector2 p1 = {0*(float)tex.width, y*(float)tex.height};
+            Vector2 p2 = {1*(float)tex.width, y*(float)tex.height};
             Vector2 p1Warped = getPosPersp2(p1, rec.inv_persp);
             Vector2 p2Warped = getPosPersp2(p2, rec.inv_persp);
             DrawLineEx(p1Warped, p2Warped, 2, GREEN);
@@ -880,20 +877,85 @@ TexRip::ImageTargetViewer::~ImageTargetViewer() {
     UnloadRenderTexture(targetTex);
 }
 
-void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, const std::vector<ImgRec>& recs) {
-    //check if needs resize
-    float padding = 10;
+Vector2 TexRip::ImageTargetViewer::layoutRecs(std::vector<ImgRec>* recs) {
+    switch (settings.layOutMode) {
+        case LayoutMode_Line:
+            return layoutRecsLine(recs);
+        case LayoutMode_LineWrap:
+            return layoutRecsLineWrap(recs);
+        case LayoutMode_Grid:
+            return layoutRecsGrid(recs);
+        //default:
+            // TODO: error
+    }
+}
+Vector2 TexRip::ImageTargetViewer::layoutRecsLine(std::vector<ImgRec>* recs) {
     Vector2 dim = { 0,0 };
-    for (auto& r : recs) {
+    float xOff = 0;
+    for (size_t i = 0; i < recs->size();i++) {
+        auto& r = (*recs)[i];
         if (r.progress == ImgRec::Prog_FULL) {
-            dim.x += r.corrDim.x + padding;
-            dim.y = std::max(dim.y, r.corrDim.y + padding);
+            r.outPos = { xOff, 0 };
+
+            xOff += r.corrDim.x + settings.padding;
+            dim.x = xOff;
+            dim.y = std::max(dim.y, r.corrDim.y + settings.padding);
         }
     }
+    return dim;
+}
+Vector2 TexRip::ImageTargetViewer::layoutRecsLineWrap(std::vector<ImgRec>* recs) {
+    Vector2 dim = { 0,0 };
+    float xOff = 0;
+    float yOff = 0;
+    float maxYLine = 0;
+    for (size_t i = 0; i < recs->size();i++) {
+        auto& r = (*recs)[i];
+        if (r.progress == ImgRec::Prog_FULL) {
+            if (xOff != 0 && xOff + r.corrDim.x + settings.padding > settings.layOutMaxWidth) {
+                xOff = 0;
+                yOff += maxYLine;
+                maxYLine = 0;
+            }
+            r.outPos = { xOff, yOff };
+
+            xOff += r.corrDim.x + settings.padding;
+            dim.x = std::max(dim.x, xOff);
+            maxYLine = std::max(maxYLine, r.corrDim.y + settings.padding);
+            dim.y = std::max(dim.y, yOff + maxYLine);
+        }
+    }
+    return dim;
+}
+Vector2 TexRip::ImageTargetViewer::layoutRecsGrid(std::vector<ImgRec>* recs) {
+    Vector2 maxRectDim = { 0,0 };
+    for (auto& r : *recs) {
+        maxRectDim.x = std::max(maxRectDim.x, r.corrDim.x);
+        maxRectDim.y = std::max(maxRectDim.y, r.corrDim.y);
+    }
+
+    size_t sideLength = (size_t)std::ceil(std::sqrtf((float)recs->size()));
+
+    Vector2 dim = { 
+        (maxRectDim.x + settings.padding) * sideLength,
+        (maxRectDim.y + settings.padding) * sideLength
+    };
+
+    for (size_t i = 0; i < recs->size(); i++) {
+        (*recs)[i].outPos = {
+            (maxRectDim.x + settings.padding) * (i%sideLength),
+            (maxRectDim.y + settings.padding) * (i/sideLength)
+        };
+    }
+    return dim;
+}
+void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, std::vector<ImgRec>& recs) {
+    //check if needs resize
+    targetDim = layoutRecs(&recs);
 
     Vector2 newSize = { 0,0 };
     bool additionalCond = targetTex.id == 0;
-    if (World2DViewer::doesViewPortNeedResize(dim.x, dim.y, (float)targetTex.texture.width, (float)targetTex.texture.height, 100, 10, newSize, additionalCond)) {
+    if (World2DViewer::doesViewPortNeedResize(targetDim.x, targetDim.y, (float)targetTex.texture.width, (float)targetTex.texture.height, 100, 10, newSize, additionalCond)) {
         if (targetTex.id != 0) {
             UnloadRenderTexture(targetTex);
         }
@@ -910,14 +972,12 @@ void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const
     ShaderManager::setProjShaderVals(srcTex, mats, (const float*)&settings.imgBGColor);
 
     const float indCentering = .5f / recs.size();
-    float xOff = 0;
-    for (int i = 0; i < recs.size(); i++) {
+    
+    for (size_t i = 0; i < recs.size(); i++) {
         auto& r = recs[i];
-
         if (r.progress == ImgRec::Prog_FULL) {
             float ind = ((float)i / recs.size()) + indCentering;
-            ShaderManager::RectVerts({ xOff, 0, r.corrDim.x, r.corrDim.y }, {ind,1,1,1});
-            xOff += r.corrDim.x + padding;
+            ShaderManager::RectVerts({ r.outPos.x, r.outPos.y, r.corrDim.x, r.corrDim.y }, {ind,1,1,1});
         }
     }
 
@@ -950,6 +1010,15 @@ void TexRip::ImageTargetViewer::afterWinDraw() {
 
     drawSettings();
 }
+void TexRip::ImageTargetViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
+    switch (settings.layOutMode) {
+        case LayoutMode_LineWrap: {
+            DrawLineEx({                       0, 0 }, {                       0, targetDim.y }, zoomIndependent(1), MAGENTA);
+            DrawLineEx({ settings.layOutMaxWidth, 0 }, { settings.layOutMaxWidth, targetDim.y }, zoomIndependent(1), MAGENTA);
+        } break;
+    }
+    DrawRectangleLinesEx({ 0,0,targetDim.x,targetDim.y }, zoomIndependent(1), GREEN);
+}
 void TexRip::ImageTargetViewer::drawSettings() {
     if (settingsWinOpen) {
         if (ImGui::Begin(settingsTitle.c_str(), &settingsWinOpen, 0)) {
@@ -959,6 +1028,23 @@ void TexRip::ImageTargetViewer::drawSettings() {
                 settingsChanged = true;
             if (imguiExt::imguiColorPickerButton("Image Background Color", settings.imgBGColor))
                 settingsChanged = true;
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Layout");
+            static const char* layoutRecsModesStrs[] = {"Line", "Line Wrap", "Square Grid"};
+            if (ImGui::Combo("Layout Mode", &settings.layOutMode, layoutRecsModesStrs, 3))
+                settingsChanged = true;
+
+            switch (settings.layOutMode) {
+                case LayoutMode_LineWrap: {
+                    if (ImGui::DragFloat("Max Width", &settings.layOutMaxWidth, 1.0f, 0.1f, FLT_MAX))
+                        settingsChanged = true;
+                } break;
+            }
+
+            if (ImGui::DragFloat("Padding", &settings.padding, 0.2f, 0.0f, FLT_MAX))
+                settingsChanged = true;
+            
 
             if (settingsChanged) {
                 needsReRender = true;
@@ -1154,7 +1240,6 @@ void TexRip::ImageRipperWindow::dontYouWantToSave() {
         ImGui::EndPopup();
     }
 }
-
 bool TexRip::ImageRipperWindow::isWinOpen() {
     return toDelete;
 }
@@ -1170,10 +1255,8 @@ void TexRip::ImageRipperWindow::close() {
 // ###############################################################################################################################
 
 int TexRip::TexRipper::WinViewManager::winViewMode = -1;
-
 size_t TexRip::TexRipper::WinViewManager::activeWinID = 0;
 bool TexRip::TexRipper::WinViewManager::winOpen = false;
-
 bool TexRip::TexRipper::WinViewManager::changed = false;
 
 void TexRip::TexRipper::WinViewManager::updateBefore() {
@@ -1275,7 +1358,7 @@ void TexRip::TexRipper::WinViewManager::drawWin() {
 
 
             ImVec2 size = ImGui::GetContentRegionAvail();
-            for (int i = 0; i < wins.size(); i++) {
+            for (size_t i = 0; i < wins.size(); i++) {
                 ImageRipperWindow* win = wins[i];
 
                 ImGuiDockNodeFlags dockFlags = ImGuiDockNodeFlags_NoTabBar;
@@ -1418,15 +1501,26 @@ void TexRip::TexRipper::drawMainMenuBar() {
             getActiveWin()->selWin.drawMenuBarFile();
             ImGui::Separator();
             getActiveWin()->texWin.drawMenuBarFile();
+
+            ImGui::Separator();
+            if (ImGui::MenuItem("Quit")) {
+                // TODO
+            }
+
             ImGui::EndMenu();
         }
 
         if (ImGui::BeginMenu("Options")) {
+            ImGui::TextUnformatted("Active Window:");
+            ImGui::Indent();
+            getActiveWin()->texWin.drawMenuBarSettings();
+            ImGui::Unindent();
+
+            ImGui::Separator();
             if (ImGui::MenuItem("Settings")) {
                 settingsWinOpen = true;
             }
-            ImGui::Separator();
-            getActiveWin()->texWin.drawMenuBarSettings();
+
             ImGui::EndMenu();
         }
 
@@ -1440,6 +1534,7 @@ void TexRip::TexRipper::drawMainMenuBar() {
             if (ImGui::MenuItem("Float")) {
                 WinViewManager::queueViewMode(WinViewManager::WinViewModes::FLOAT);
             }
+
             ImGui::EndMenu();
         }
 
@@ -1447,6 +1542,7 @@ void TexRip::TexRipper::drawMainMenuBar() {
             if (ImGui::MenuItem("new Win")) {
                 addImage(("Thing"+std::to_string(rand())).c_str(), LoadTexture("assets/ressources/img2.png"));
             }
+
             ImGui::EndMenu();
         }
 
@@ -1457,19 +1553,24 @@ void TexRip::TexRipper::drawMainMenuBar() {
 void TexRip::TexRipper::drawSettingsWindow() {
     if (settingsWinOpen) {
         if (ImGui::Begin("Settings", &settingsWinOpen, 0)) {
-            if (ImGui::BeginListBox("listbox 1")) {
-                for (int n = 0; n < SettingsCategories_COUNT; n++)
-                {
-                    const bool is_selected = (currentSettingCategory == n);
-                    if (ImGui::Selectable(settingsCategories[n].c_str(), is_selected))
-                        currentSettingCategory = n;
+            if (ImGui::BeginChild("CategoryChildWin", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.25f, 0), false, 0)) {
+                if (ImGui::BeginListBox("listbox 1", {-1,ImGui::GetContentRegionAvail().y})) {
+                    for (int n = 0; n < SettingsCategories_COUNT; n++)
+                    {
+                        const bool is_selected = (currentSettingCategory == n);
+                        if (ImGui::Selectable(settingsCategories[n].c_str(), is_selected, ImGuiSelectableFlags_SelectOnClick))
+                            currentSettingCategory = n;
 
-                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndListBox();
                 }
-                ImGui::EndListBox();
             }
+            ImGui::EndChild();
+
+            ImGui::SameLine();
 
             switch (currentSettingCategory) {
                 case SettingsCategories_General:
@@ -1489,6 +1590,13 @@ void TexRip::TexRipper::addImage(const char* name, const Texture2D& tex) {
     wins.push_back(win);
 
     WinViewManager::reQueueViewMode();
+}
+
+void TexRip::TexRipper::debugDraw() {
+    if (wins.size() > 0) {
+        const Texture& t = wins[0]->selWin.getInvMats();
+        DrawTextureEx(t, { 0,0 }, 0, 10, WHITE);
+    }
 }
 
 /*

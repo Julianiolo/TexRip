@@ -44,7 +44,7 @@ void utils::getHomography(const Vector2* src, const Vector2* dst, float* mat) {
 
 	Eigen::Matrix<double, 3, 3> res = get_homography_E(srcM, dstM);
 	for (int i = 0; i < 9; i++) {
-		mat[i] = res(i%3,i/3);
+		mat[i] = (float)res(i%3,i/3);
 	}
 }
 

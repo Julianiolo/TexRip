@@ -27,6 +27,7 @@ namespace TexRip {
         Vector2 lastRipPos[4];
         float persp[9];
         float inv_persp[9];
+        Vector2 outPos;
         Vector2 corrDim;
         uint8_t progress = Prog_FULL;
 
@@ -51,8 +52,6 @@ namespace TexRip {
 
     class ImageSelectionViewer : public ImageRipChildWin {
     protected:
-        
-
         class RectManager {
         public:
             enum MODES {
@@ -90,6 +89,7 @@ namespace TexRip {
 
             uint8_t mode = MODES::NONE;
             bool needsMatUpdate = true;
+            bool needsMatUpdateForce = false;
 
             Vector2 moveOff = { 0,0 };
 
@@ -108,7 +108,7 @@ namespace TexRip {
             
             bool managePoints(const Vector2& mousePosTexRel, const Vector2& mouseDeltaTexRel, const float zoomF, const bool winIsHovered, const Vector2& texSize); // returns true if reRender is needed
 
-            const std::vector<ImgRec>& getRecs();
+            std::vector<ImgRec>& getRecs();
             void addRect(const ImgRec& rect);
             uint8_t getMode() const;
             bool werePointsMoved() const;
@@ -120,7 +120,7 @@ namespace TexRip {
             const Texture2D& getMatTex() const;
             const Texture2D& getInvMatTex() const;
 
-            void updateRecMats(const Vector2& texSize);
+            void updateRecMats(const Vector2& texSize, bool forceTexUpdate = false);
 
         private:
             bool startPointMode(const Vector2& mousePosTexRel); //returns true if mode started
@@ -163,7 +163,7 @@ namespace TexRip {
         ImageSelectionViewer(const Texture2D& tex, const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
         ~ImageSelectionViewer();
 
-        const std::vector<ImgRec>& getRecs();
+        std::vector<ImgRec>& getRecs();
 
         void openFile();
 
@@ -193,11 +193,15 @@ namespace TexRip {
     class ImageTargetViewer : public ImageRipChildWin {
     public:
         RenderTexture2D targetTex;
+        Vector2 targetDim = { 0,0 };
         std::string lastSavePath = "";
 
         struct Settings {
             ImVec4 mainBGColor = { 0,0,0,0 };
             ImVec4 imgBGColor = { 0,0,0,0 };
+            float padding = 10;
+            int layOutMode = LayoutMode_Line;
+            float layOutMaxWidth = 1000;
         };
         Settings settings;
         bool settingsWinOpen = false;
@@ -208,7 +212,7 @@ namespace TexRip {
         ImageTargetViewer(const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
         ~ImageTargetViewer(); 
 
-        void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, const std::vector<ImgRec>& recs);
+        void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, std::vector<ImgRec>& recs);
         bool save();
         bool saveAs();
         bool editedSinceSaved();
@@ -218,7 +222,18 @@ namespace TexRip {
     protected:
         void drawMenuBar() override;
         void afterWinDraw() override;
+        void drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) override;
         void drawSettings();
+
+        enum LayoutMode_ {
+            LayoutMode_Line = 0,
+            LayoutMode_LineWrap,
+            LayoutMode_Grid
+        };
+        Vector2 layoutRecs(std::vector<ImgRec>* recs);
+        Vector2 layoutRecsLine(std::vector<ImgRec>* recs);
+        Vector2 layoutRecsLineWrap(std::vector<ImgRec>* recs);
+        Vector2 layoutRecsGrid(std::vector<ImgRec>* recs);
 
         bool saveTex(const char* path);
         bool editedSinceSavedB = true;
@@ -327,6 +342,8 @@ namespace TexRip {
 
         static void draw();
         static void addImage(const char* name, const Texture2D& tex);
+
+        static void debugDraw();
     };
 }
 

@@ -1,7 +1,11 @@
 #include "ImGuiImageViewers.h"
+
 #include "raymath.h"
+#include "rlgl.h"
+
 #include "utils/utils.h"
 #include "oneHeaderLibs/VectorOperators.h"
+
 #include "rlImGui/rlImGui.h"
 
 World2DViewer::World2DViewer(const char* name, ImGuiWindowFlags flags) {
@@ -278,12 +282,22 @@ void TextureViewer::drawWorld(const Vector2& mousePos, const Vector2& mouseDelta
         }
         Vector2 renTexDim = renderTexSize();
         Rectangle dst = { renTexDim.x / 2 - firstTexDispSize.x / 2, renTexDim.y / 2 - firstTexDispSize.y / 2, texDispSize.x, texDispSize.y };
+#if 0
+        float pad = 5;
+        DrawRectangleRec({dst.x-pad, dst.y-pad, dst.width+2*pad, dst.height+2*pad}, ORANGE);
+#endif
         DrawTexturePro(tex, src, dst, {0,0},0, WHITE);
     }
 
     //DrawCircle(cam.target.x, cam.target.y, 20, GREEN);
 
+    rlPushMatrix();
+    Vector2 off = getPosTexToWin({ 0,0 });
+    rlTranslatef(off.x, off.y, 0);
+
     drawOverlay(mousePos, mouseDelta);
+
+    rlPopMatrix();
 }
 void TextureViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
     
@@ -316,11 +330,11 @@ void TextureViewer::queueReAdjustZoom() {
 
 Vector2 TextureViewer::getPosTexToWin(const Vector2& pos) {
     Vector2 center = renderTexSize() / 2;
-    return Vector2Add(Vector2Subtract(pos, Vector2Scale(texDispSize, 0.5)), center);
+    return Vector2Add(Vector2Subtract(pos, Vector2Scale(firstTexDispSize, 0.5)), center);
 }
 Vector2 TextureViewer::getPosWinToTex(const Vector2& pos) {
     Vector2 center = renderTexSize() / 2;
-    return Vector2Add(Vector2Subtract(pos, center), Vector2Scale(texDispSize, 0.5));
+    return Vector2Add(Vector2Subtract(pos, center), Vector2Scale(firstTexDispSize, 0.5));
 }
 
 Vector2 TextureViewer::getOffTexToWin(const Vector2& pos) {

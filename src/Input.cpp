@@ -1,8 +1,11 @@
 #include "Input.h"
+
 #include "raylib.h"
 #include "utils/utils.h"
+
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "Extensions/imgui/imguiExts.h"
 
 #if defined(PLATFORM_DESKTOP)
 	#include "external/glfw/include/GLFW/glfw3.h"
@@ -220,8 +223,11 @@ void Input::ActionKeyCapture::captureKeys() {
 		}
 	}
 
-	if (ImGui::BeginPopupModal("Enter Keys", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::TextUnformatted(captured.keyName.c_str());
+	// Always center this window when appearing
+	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Enter Keys", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+		imguiExt::TextColoredCentered(ImVec4(0.1f, 0.9f, 0.2f, 1.0f), captured.keyName.c_str());
 
 		if (!finished)
 			ImGui::PushDisabled();
