@@ -67,14 +67,12 @@ void draw() {
 
     BeginRLImGui();
 
-    //ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_Once);
     TexRip::TexRipper::draw();
-    //t->draw(GetMousePosition(), mouseDelta);
 
-    ImGui::ShowDemoWindow(NULL);
+    //ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
-    TexRip::TexRipper::debugDraw();
+    //TexRip::TexRipper::debugDraw();
 
     lastMousePos = GetMousePosition();
 
@@ -168,7 +166,7 @@ int main(void)
 
     return 0;
 }
-#elif 1
+#elif 0
 #include "raylib.h"
 #include <iostream>
 
@@ -201,8 +199,7 @@ int main(void)
 
     return 0;
 }
-
-#elif 1
+#elif 0
 #include "raylib.h"
 #include <iostream>
 
@@ -271,6 +268,15 @@ int main(void)
 
     CloseWindow();
 
+    return 0;
+}
+
+#elif 1
+#include "utils/map.h"
+int main() {
+    utils::Map<float, int> m;
+    m.add(0, 5);
+    m.getItemInd(0);
     return 0;
 }
 

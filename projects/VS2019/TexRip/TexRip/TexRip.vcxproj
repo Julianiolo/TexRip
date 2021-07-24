@@ -230,6 +230,7 @@
     <ClInclude Include="..\..\..\..\src\rlImGui\rlImGui.h" />
     <ClInclude Include="..\..\..\..\src\shaders.h" />
     <ClInclude Include="..\..\..\..\src\TexRip.h" />
+    <ClInclude Include="..\..\..\..\src\utils\map.h" />
     <ClInclude Include="..\..\..\..\src\utils\overrideStack.h" />
     <ClInclude Include="..\..\..\..\src\utils\utils.h" />
   </ItemGroup>

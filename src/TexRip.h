@@ -6,6 +6,7 @@
 //#include "opencv2/core.hpp"
 #include "ImGuiImageViewers.h"
 #include "utils/overrideStack.h"
+#include "utils/map.h"
 
 namespace TexRip {
     struct ImgPoint {
@@ -33,11 +34,11 @@ namespace TexRip {
 
         ImgRec();
         ImgRec(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector2& pos4, const Vector2& imgDim);
-        
 
         void calcPersp(const Vector2& imgDim);
 
         Rectangle boundingBox() const;
+        bool isValid() const;
     };
 
     class ImageRipChildWin : public TextureViewer {
@@ -63,7 +64,6 @@ namespace TexRip {
             };
             
         private:
-            typedef int RectPntID;
 
             class PersMat {
             protected:
@@ -74,7 +74,12 @@ namespace TexRip {
                 PersMat();
                 ~PersMat();
 
-                void updateWithRecs(const std::vector<ImgRec>& recs, bool inverse);
+                void updateWithRecs(const utils::Map<size_t, ImgRec>& recs, bool inverse);
+            };
+
+            struct RectPointID {
+                size_t rectID;
+                uint8_t pointID;
             };
 
             bool worldMayMove = true;
@@ -84,8 +89,10 @@ namespace TexRip {
 
             bool pointsWereMoved = false;
 
-            std::vector<ImgRec> recs;
-            OverrideStack<std::vector<ImgRec>> undoBuffer;
+            //std::vector<ImgRec> recs;
+            utils::Map<size_t, ImgRec> recs;
+            size_t ID_counter = 0;
+            OverrideStack<utils::Map<size_t, ImgRec>> undoBuffer;
 
             uint8_t mode = MODES::NONE;
             bool needsMatUpdate = true;
@@ -101,15 +108,15 @@ namespace TexRip {
             //Vector2 globalSclCenter = sclCenter;
             float sclMouseStartDist = 1;
 
-            RectPntID constrID = -1;
+            size_t constrID = -1;
 
         public:
             RectManager();
             
             bool managePoints(const Vector2& mousePosTexRel, const Vector2& mouseDeltaTexRel, const float zoomF, const bool winIsHovered, const Vector2& texSize); // returns true if reRender is needed
 
-            std::vector<ImgRec>& getRecs();
-            void addRect(const ImgRec& rect);
+            utils::Map<size_t, ImgRec>& getRecs();
+            size_t addRect(const ImgRec& rect);
             uint8_t getMode() const;
             bool werePointsMoved() const;
             bool mayWorldMove() const;
@@ -144,12 +151,8 @@ namespace TexRip {
             void selectAllOrNone(int force = -1);
             void selectLinked();
 
-            RectPntID getSelPointInd(const Vector2& mousePosTexRel, const float zoomF, bool deselect);
-            Vector2 getMeanSelPntPos(int& numRef);
-
-            const size_t getRecIndFromID(RectPntID id);
-            ImgRec& getRecFromID(RectPntID id);
-            ImgPoint& getRecPntFromID(RectPntID id);
+            RectPointID getSelPointInd(const Vector2& mousePosTexRel, const float zoomF, bool deselect);
+            Vector2 getMeanSelPntPos(int& numRef) const;
 
             void addUndoState();
             bool undo(); // returns true if undo was successful
@@ -163,7 +166,7 @@ namespace TexRip {
         ImageSelectionViewer(const Texture2D& tex, const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
         ~ImageSelectionViewer();
 
-        std::vector<ImgRec>& getRecs();
+        utils::Map<size_t, ImgRec>& getRecs();
 
         void openFile();
 
@@ -212,7 +215,7 @@ namespace TexRip {
         ImageTargetViewer(const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
         ~ImageTargetViewer(); 
 
-        void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, std::vector<ImgRec>& recs);
+        void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, utils::Map<size_t, ImgRec>& recs);
         bool save();
         bool saveAs();
         bool editedSinceSaved();
@@ -225,15 +228,17 @@ namespace TexRip {
         void drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) override;
         void drawSettings();
 
+        void openSettingsWin();
+
         enum LayoutMode_ {
             LayoutMode_Line = 0,
             LayoutMode_LineWrap,
             LayoutMode_Grid
         };
-        Vector2 layoutRecs(std::vector<ImgRec>* recs);
-        Vector2 layoutRecsLine(std::vector<ImgRec>* recs);
-        Vector2 layoutRecsLineWrap(std::vector<ImgRec>* recs);
-        Vector2 layoutRecsGrid(std::vector<ImgRec>* recs);
+        Vector2 layoutRecs(utils::Map<size_t, ImgRec>* recs);
+        Vector2 layoutRecsLine(utils::Map<size_t, ImgRec>* recs);
+        Vector2 layoutRecsLineWrap(utils::Map<size_t, ImgRec>* recs);
+        Vector2 layoutRecsGrid(utils::Map<size_t, ImgRec>* recs);
 
         bool saveTex(const char* path);
         bool editedSinceSavedB = true;

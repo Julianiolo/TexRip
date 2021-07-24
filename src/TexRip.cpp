@@ -55,6 +55,21 @@ Rectangle TexRip::ImgRec::boundingBox() const {
     }
     return Rectangle{ min.x, min.y, max.x - min.x, max.y - min.y };
 }
+bool TexRip::ImgRec::isValid() const {
+    int sign = 0;
+    for (size_t i = 0; i < 4; i++) {
+        auto& a = pnts[i].pos;
+        auto& b = pnts[(i + 1) % 4].pos;
+        auto& c = pnts[(i + 2) % 4].pos;
+        float res = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+
+        if (sign == 0)
+            sign = res >= 0 ? 1 : -1;
+        if (sign >= 0 != res >= 0)
+            return false;
+    }
+    return true;
+}
 
 // ###############################################################################################################################
 
@@ -93,8 +108,8 @@ TexRip::ImageSelectionViewer::RectManager::PersMat::~PersMat() {
         UnloadTexture(tex);
     }
 }
-void TexRip::ImageSelectionViewer::RectManager::PersMat::updateWithRecs(const std::vector<ImgRec>& recs, bool inverse) {
-    int targetLen = recs.size();
+void TexRip::ImageSelectionViewer::RectManager::PersMat::updateWithRecs(const utils::Map<size_t, ImgRec>& recs, bool inverse) {
+    size_t targetLen = recs.size();
     if (targetLen != img.width) {
         img.width = targetLen;
         if (img.data != NULL) {
@@ -107,9 +122,10 @@ void TexRip::ImageSelectionViewer::RectManager::PersMat::updateWithRecs(const st
     }
     if (inverse) {
         for (int i = 0; i < img.width; i++) {
-            if (recs[i].progress == ImgRec::Prog_FULL) {
+            auto& r = recs.atInd(i);
+            if (r.progress == ImgRec::Prog_FULL) {
                 for (int j = 0; j < 3; j++) {
-                    ((Vector3*)img.data)[j*img.width+i] = {recs[i].inv_persp[j*3+0],recs[i].inv_persp[j*3+1],recs[i].inv_persp[j*3+2]};
+                    ((Vector3*)img.data)[j*img.width+i] = {r.inv_persp[j*3+0],r.inv_persp[j*3+1],r.inv_persp[j*3+2]};
                 }
             }
             else {
@@ -121,9 +137,10 @@ void TexRip::ImageSelectionViewer::RectManager::PersMat::updateWithRecs(const st
     }
     else {
         for (int i = 0; i < img.width; i++) {
-            if (recs[i].progress == ImgRec::Prog_FULL) {
+            auto& r = recs.atInd(i);
+            if (r.progress == ImgRec::Prog_FULL) {
                 for (int j = 0; j < 3; j++) {
-                    ((Vector3*)img.data)[j*img.width+i] = {recs[i].persp[j*3+0],recs[i].persp[j*3+1],recs[i].persp[j*3+2]};
+                    ((Vector3*)img.data)[j*img.width+i] = {r.persp[j*3+0],r.persp[j*3+1],r.persp[j*3+2]};
                 }
             }
             else {
@@ -214,8 +231,7 @@ bool TexRip::ImageSelectionViewer::RectManager::addRectConstr() {
 
         r.lastRipPos[i] = { -1,-1 };
     }
-    addRect(r);
-    constrID = (recs.size()-1) << 2;
+    constrID = addRect(r);
 
     mode = MODES::CONSTRUCT;
     worldMayMove = true;
@@ -263,7 +279,7 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
     }
     else if (mode == MODES::CONSTRUCT) {
         
-        if (winIsHovered && IsMouseButtonPressed(Input::secMouseB())) {
+        if (IsMouseButtonPressed(Input::secMouseB())) {
             stopPointModeConstruct(true);
         }
         else {
@@ -271,7 +287,7 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
         }
     }
     else { //mode != NONE && mode != CONSTRUCT
-        if (winIsHovered && (IsMouseButtonPressed(Input::mainMouseB()) || IsMouseButtonPressed(Input::secMouseB()))) { // stop/cancel mode
+        if (IsMouseButtonPressed(Input::mainMouseB()) || IsMouseButtonPressed(Input::secMouseB())) { // stop/cancel mode
             stopPointMode(IsMouseButtonPressed(Input::secMouseB()));
             reRender = true;
             needsMatUpdate = true;
@@ -317,7 +333,8 @@ bool TexRip::ImageSelectionViewer::RectManager::updatePointsMove(const Vector2& 
 
         moveOff += moveAmt;
 
-        for (auto& r : recs) {
+        for (auto& rI : recs) {
+            auto& r = rI.second;
             for (auto& p : r.pnts) {
                 if (p.selected) {
                     p.pos += moveAmt;
@@ -345,7 +362,8 @@ bool TexRip::ImageSelectionViewer::RectManager::updatePointsRotate(const Vector2
     if (angle != 0) {
         float s = sin(angle);
         float c = cos(angle);
-        for (auto& r : recs) {
+        for (auto& rI : recs) {
+            auto& r = rI.second;
             for (auto& p : r.pnts) {
                 if (p.selected) {
                     p.pos = utils::rotatePoint(p.pos, rotCenter, s, c);
@@ -363,7 +381,8 @@ bool TexRip::ImageSelectionViewer::RectManager::updatePointsScale(const Vector2&
         //float diff = sclAmt - lastSclAmt;
         //diff *= fact;
         //float newSclAmt = lastSclAmt + diff;
-        for (auto& r : recs) {
+        for (auto& rI : recs) {
+            auto& r = rI.second;
             for (auto& p : r.pnts) {
                 if (p.selected) {
                     p.pos = (((p.pos-sclCenter) / lastSclAmt) * sclAmt)+sclCenter;
@@ -377,7 +396,7 @@ bool TexRip::ImageSelectionViewer::RectManager::updatePointsScale(const Vector2&
 }
 bool TexRip::ImageSelectionViewer::RectManager::updatePointsConstruct(const Vector2& mousePosTexRel) {
     bool reRender = false;
-    ImgRec& rec = getRecFromID(constrID);
+    ImgRec& rec = recs.get(constrID);
 
     if (Input::isActionActive(Input::Action_undo) && rec.progress > ImgRec::Prog_0) {
         rec.progress--;
@@ -430,7 +449,8 @@ void TexRip::ImageSelectionViewer::RectManager::stopPointMode(bool cancel) {
     worldMayMove = true;
 }
 void TexRip::ImageSelectionViewer::RectManager::stopPointModeMove() {
-    for (auto& r : recs) {
+    for (auto& rI : recs) {
+        auto& r = rI.second;
         for (auto& p : r.pnts) {
             if (p.selected) {
                 p.pos.x -= moveOff.x;
@@ -442,7 +462,8 @@ void TexRip::ImageSelectionViewer::RectManager::stopPointModeMove() {
 void TexRip::ImageSelectionViewer::RectManager::stopPointModeRotate() {
     float s = sin(-rotOff);
     float c = cos(-rotOff);
-    for (auto& r : recs) {
+    for (auto& rI : recs) {
+        auto& r = rI.second;
         for (auto& p : r.pnts) {
             if (p.selected) {
                 p.pos = utils::rotatePoint(p.pos, rotCenter, s, c);
@@ -451,7 +472,8 @@ void TexRip::ImageSelectionViewer::RectManager::stopPointModeRotate() {
     }
 }
 void TexRip::ImageSelectionViewer::RectManager::stopPointModeScale() {
-    for (auto& r : recs) {
+    for (auto& rI : recs) {
+        auto& r = rI.second;
         for (auto& p : r.pnts) {
             if (p.selected) {
                 p.pos = ((p.pos-sclCenter) / lastSclAmt)+sclCenter;
@@ -461,7 +483,7 @@ void TexRip::ImageSelectionViewer::RectManager::stopPointModeScale() {
 }
 void TexRip::ImageSelectionViewer::RectManager::stopPointModeConstruct(bool cancel) {
     if (cancel) {
-        recs.erase(recs.begin() + getRecIndFromID(constrID));
+        recs.remove(constrID);
     }
     else {
 
@@ -475,15 +497,16 @@ void TexRip::ImageSelectionViewer::RectManager::stopPointModeConstruct(bool canc
 bool TexRip::ImageSelectionViewer::RectManager::selectWithMouse(const Vector2& mousePosTexRel, const float zoomF) {
     bool doDeselect = !Input::modShift();
 
-    RectPntID pnt = getSelPointInd(mousePosTexRel, zoomF,doDeselect);
+    RectPointID pnt = getSelPointInd(mousePosTexRel, zoomF,doDeselect);
 
-    if (pnt != -1) {
+    if (pnt.rectID != -1) {
+        auto& r = recs.get(pnt.rectID);
         if (Input::modCtrl()) { //sel complete rect
-            for (auto& p : getRecFromID(pnt).pnts)
+            for (auto& p : r.pnts)
                 p.selected = true;
         }
         else {
-            getRecPntFromID(pnt).selected = true;
+            r.pnts[pnt.pointID].selected = true;
         }
         return true;
     }
@@ -492,7 +515,8 @@ bool TexRip::ImageSelectionViewer::RectManager::selectWithMouse(const Vector2& m
 void TexRip::ImageSelectionViewer::RectManager::selectAllOrNone(int force) {
     if (force == -1) { //auto detect
         bool allSel = true;
-        for (auto& r : recs) {
+        for (auto& rI : recs) {
+            auto& r = rI.second;
             for (auto& p : r.pnts) {
                 if (!p.selected) {
                     p.selected = true;
@@ -502,7 +526,8 @@ void TexRip::ImageSelectionViewer::RectManager::selectAllOrNone(int force) {
         }
 
         if (allSel) {
-            for (auto& r : recs) {
+            for (auto& rI : recs) {
+                auto& r = rI.second;
                 for (auto& p : r.pnts) {
                     p.selected = false;
                 }
@@ -510,7 +535,8 @@ void TexRip::ImageSelectionViewer::RectManager::selectAllOrNone(int force) {
         }
     }
     else { //set all to force
-        for (auto& r : recs) {
+        for (auto& rI : recs) {
+            auto& r = rI.second;
             for (auto& p : r.pnts) {
                 p.selected = force;
             }
@@ -518,7 +544,8 @@ void TexRip::ImageSelectionViewer::RectManager::selectAllOrNone(int force) {
     }
 }
 void TexRip::ImageSelectionViewer::RectManager::selectLinked() {
-    for (auto& r : recs) {
+    for (auto& rI : recs) {
+        auto& r = rI.second;
         bool isSel = false;
         for (auto& p : r.pnts) {
             if (p.selected) {
@@ -534,48 +561,50 @@ void TexRip::ImageSelectionViewer::RectManager::selectLinked() {
     }
 }
 
-TexRip::ImageSelectionViewer::RectManager::RectPntID TexRip::ImageSelectionViewer::RectManager::getSelPointInd(const Vector2& mousePosTexRel, const float zoomF, bool deselect) {
-    for (auto& r : recs) {
+TexRip::ImageSelectionViewer::RectManager::RectPointID TexRip::ImageSelectionViewer::RectManager::getSelPointInd(const Vector2& mousePosTexRel, const float zoomF, bool deselect) {
+    for (auto& rI : recs) {
+        auto& r = rI.second;
         for (auto& p : r.pnts) {
             p.candidate = CheckCollisionPointCircle(mousePosTexRel, p.pos, 50 * zoomF);
         }
     }
 
     float minDist = INFINITY;
-    int nearest = -1;
-    int backup = -1;
-    for (size_t r = 0; r < recs.size();r++) {
-        for (int p = 0; p < 4;p++) {
-            if (recs[r].pnts[p].candidate) {
-                float dist = Vector2Distance(mousePosTexRel, recs[r].pnts[p].pos); // TODO replace with distSq
+    RectPointID nearest = { -1,-1 };
+    RectPointID backup = { -1,-1 };
+    for (size_t i = 0; i < recs.size();i++) {
+        for (uint8_t p = 0; p < 4;p++) {
+            auto& r = recs.atInd(i);
+            if (r.pnts[p].candidate) {
+                float dist = Vector2Distance(mousePosTexRel, r.pnts[p].pos); // TODO replace with distSq
                 if (dist < minDist) {
-                    if (!recs[r].pnts[p].selected) {
+                    if (!r.pnts[p].selected) {
                         minDist = dist;
-                        nearest = r<<2 | p;
+                        nearest = { i, p };
                     }
                     else {
-                        backup = r<<2 | p;
+                        backup = { i, p };
                     }
                 }
-                recs[r].pnts[p].candidate = false;
+                r.pnts[p].candidate = false;
             }
             if(deselect)
-                recs[r].pnts[p].selected = false;
+                r.pnts[p].selected = false;
         }
     }
 
-    int pnt = -1;
-    if (nearest != -1) {
+    if (nearest.rectID != -1) {
         return nearest;
     }
     else {
         return backup;
     }
 }
-Vector2 TexRip::ImageSelectionViewer::RectManager::getMeanSelPntPos(int& numRef) {
+Vector2 TexRip::ImageSelectionViewer::RectManager::getMeanSelPntPos(int& numRef) const {
     Vector2 sum = { 0,0 };
     int num = 0;
-    for (auto& r : recs) {
+    for (auto& rI : recs) {
+        auto& r = rI.second;
         for (auto& p : r.pnts) {
             if (p.selected) {
                 sum += p.pos;
@@ -599,19 +628,11 @@ bool TexRip::ImageSelectionViewer::RectManager::undo() {
     return true;
 }
 
-const size_t TexRip::ImageSelectionViewer::RectManager::getRecIndFromID(RectPntID id) {
-    return id >> 2;
-}
-TexRip::ImgRec& TexRip::ImageSelectionViewer::RectManager::getRecFromID(RectPntID id) {
-    return recs[getRecIndFromID(id)];
-}
-TexRip::ImgPoint& TexRip::ImageSelectionViewer::RectManager::getRecPntFromID(RectPntID id) {
-    return recs[id >> 2].pnts[id & 0b11];
-}
 
 void TexRip::ImageSelectionViewer::RectManager::updateRecMats(const Vector2& texSize, bool forceTexUpdate) { // returns true if at least 1 rect mat got updated
     bool wasUpdated = false;
-    for (auto& r : recs) {
+    for (auto& rI : recs) {
+        auto& r = rI.second;
         if (r.progress == ImgRec::Prog_FULL) {
             for (int i = 0; i < 4; i++) {
                 if (r.pnts[i].pos != r.lastRipPos[i]) {
@@ -629,12 +650,14 @@ void TexRip::ImageSelectionViewer::RectManager::updateRecMats(const Vector2& tex
     }
 }
 
-std::vector<TexRip::ImgRec>& TexRip::ImageSelectionViewer::RectManager::getRecs() {
+utils::Map<size_t, TexRip::ImgRec>& TexRip::ImageSelectionViewer::RectManager::getRecs() {
     return recs;
 }
-void TexRip::ImageSelectionViewer::RectManager::addRect(const TexRip::ImgRec& rect) {
-    recs.push_back(rect);
+size_t TexRip::ImageSelectionViewer::RectManager::addRect(const TexRip::ImgRec& rect) {
+    size_t id = ID_counter++;
+    recs.add(id, rect);
     needsMatUpdate = true;
+    return id;
 }
 uint8_t TexRip::ImageSelectionViewer::RectManager::getMode() const {
     return mode;
@@ -715,7 +738,7 @@ bool TexRip::ImageSelectionViewer::ownUpdate(const Vector2& mousePos, const Vect
 }
 void TexRip::ImageSelectionViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
     for (auto& r : rectManager.getRecs()) {
-        drawRec(r, { 200,200,200,255 }, {255, 185, 64, 255}, BLACK, ORANGE);
+        drawRec(r.second, { 200,200,200,255 }, {255, 185, 64, 255}, BLACK, ORANGE);
     }
     
 #if 0
@@ -754,7 +777,7 @@ void TexRip::ImageSelectionViewer::afterWinDraw() {
     }
 }
 
-std::vector<TexRip::ImgRec>& TexRip::ImageSelectionViewer::getRecs() {
+utils::Map<size_t, TexRip::ImgRec>& TexRip::ImageSelectionViewer::getRecs() {
     return rectManager.getRecs();
 }
 
@@ -778,7 +801,7 @@ void TexRip::ImageSelectionViewer::drawRec(const ImgRec& rec, Color lineC, Color
         );
     }
 
-    if (rec.progress == ImgRec::Prog_FULL) {
+    if (rec.progress == ImgRec::Prog_FULL && rec.isValid()) {
         constexpr float step = 1.0f / 5;
         for (float x = step/2; x < 1; x += step) {
             Vector2 p1 = {x*(float)tex.width,                   0};
@@ -877,7 +900,7 @@ TexRip::ImageTargetViewer::~ImageTargetViewer() {
     UnloadRenderTexture(targetTex);
 }
 
-Vector2 TexRip::ImageTargetViewer::layoutRecs(std::vector<ImgRec>* recs) {
+Vector2 TexRip::ImageTargetViewer::layoutRecs(utils::Map<size_t, ImgRec>* recs) {
     switch (settings.layOutMode) {
         case LayoutMode_Line:
             return layoutRecsLine(recs);
@@ -889,11 +912,11 @@ Vector2 TexRip::ImageTargetViewer::layoutRecs(std::vector<ImgRec>* recs) {
             // TODO: error
     }
 }
-Vector2 TexRip::ImageTargetViewer::layoutRecsLine(std::vector<ImgRec>* recs) {
+Vector2 TexRip::ImageTargetViewer::layoutRecsLine(utils::Map<size_t, ImgRec>* recs) {
     Vector2 dim = { 0,0 };
     float xOff = 0;
     for (size_t i = 0; i < recs->size();i++) {
-        auto& r = (*recs)[i];
+        auto& r = recs->atInd(i);
         if (r.progress == ImgRec::Prog_FULL) {
             r.outPos = { xOff, 0 };
 
@@ -904,13 +927,13 @@ Vector2 TexRip::ImageTargetViewer::layoutRecsLine(std::vector<ImgRec>* recs) {
     }
     return dim;
 }
-Vector2 TexRip::ImageTargetViewer::layoutRecsLineWrap(std::vector<ImgRec>* recs) {
+Vector2 TexRip::ImageTargetViewer::layoutRecsLineWrap(utils::Map<size_t, ImgRec>* recs) {
     Vector2 dim = { 0,0 };
     float xOff = 0;
     float yOff = 0;
     float maxYLine = 0;
     for (size_t i = 0; i < recs->size();i++) {
-        auto& r = (*recs)[i];
+        auto& r = recs->atInd(i);
         if (r.progress == ImgRec::Prog_FULL) {
             if (xOff != 0 && xOff + r.corrDim.x + settings.padding > settings.layOutMaxWidth) {
                 xOff = 0;
@@ -927,9 +950,10 @@ Vector2 TexRip::ImageTargetViewer::layoutRecsLineWrap(std::vector<ImgRec>* recs)
     }
     return dim;
 }
-Vector2 TexRip::ImageTargetViewer::layoutRecsGrid(std::vector<ImgRec>* recs) {
+Vector2 TexRip::ImageTargetViewer::layoutRecsGrid(utils::Map<size_t, ImgRec>* recs) {
     Vector2 maxRectDim = { 0,0 };
-    for (auto& r : *recs) {
+    for (auto& rI : *recs) {
+        auto& r = rI.second;
         maxRectDim.x = std::max(maxRectDim.x, r.corrDim.x);
         maxRectDim.y = std::max(maxRectDim.y, r.corrDim.y);
     }
@@ -942,14 +966,14 @@ Vector2 TexRip::ImageTargetViewer::layoutRecsGrid(std::vector<ImgRec>* recs) {
     };
 
     for (size_t i = 0; i < recs->size(); i++) {
-        (*recs)[i].outPos = {
+        (*recs).atInd(i).outPos = {
             (maxRectDim.x + settings.padding) * (i%sideLength),
             (maxRectDim.y + settings.padding) * (i/sideLength)
         };
     }
     return dim;
 }
-void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, std::vector<ImgRec>& recs) {
+void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, utils::Map<size_t, ImgRec>& recs) {
     //check if needs resize
     targetDim = layoutRecs(&recs);
 
@@ -974,7 +998,7 @@ void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const
     const float indCentering = .5f / recs.size();
     
     for (size_t i = 0; i < recs.size(); i++) {
-        auto& r = recs[i];
+        auto& r = recs.atInd(i);
         if (r.progress == ImgRec::Prog_FULL) {
             float ind = ((float)i / recs.size()) + indCentering;
             ShaderManager::RectVerts({ r.outPos.x, r.outPos.y, r.corrDim.x, r.corrDim.y }, {ind,1,1,1});
@@ -1024,9 +1048,9 @@ void TexRip::ImageTargetViewer::drawSettings() {
         if (ImGui::Begin(settingsTitle.c_str(), &settingsWinOpen, 0)) {
             bool settingsChanged = false;
 
-            if (imguiExt::imguiColorPickerButton("Main Background Color", settings.mainBGColor))
+            if (imguiExt::imguiColorPickerButton("Main Background Color", settings.mainBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
                 settingsChanged = true;
-            if (imguiExt::imguiColorPickerButton("Image Background Color", settings.imgBGColor))
+            if (imguiExt::imguiColorPickerButton("Image Background Color", settings.imgBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
                 settingsChanged = true;
 
             ImGui::Separator();
@@ -1074,7 +1098,8 @@ bool TexRip::ImageTargetViewer::saveAs() {
 bool TexRip::ImageTargetViewer::saveTex(const char* path) {
     bool success;
     Image img = LoadImageFromTexture(tex);
-    ImageFlipVertical(&img);
+    ImageCrop(&img, {0,0,targetDim.x,targetDim.y}); //crop Img from texture size to actual size (bc the texture is always a little bit bigger than neccesary to reduce reallocations)
+    ImageFlipVertical(&img); // flip Image because of opengls upside down renderTextures
     success = ExportImage(img, path);
     UnloadImage(img);
     
@@ -1098,7 +1123,16 @@ void TexRip::ImageTargetViewer::drawMenuBarFile() {
 }
 void TexRip::ImageTargetViewer::drawMenuBarSettings() {
     if (ImGui::MenuItem("Open Output Settings")) {
+        openSettingsWin();
+    }
+}
+
+void TexRip::ImageTargetViewer::openSettingsWin() {
+    if (!settingsWinOpen) {
         settingsWinOpen = true;
+    }
+    else {
+        ImGui::SetWindowFocus(settingsTitle.c_str());
     }
 }
 
@@ -1180,7 +1214,14 @@ void TexRip::ImageRipperWindow::floatWinView() {
 
 void TexRip::ImageRipperWindow::drawParentWin() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    if (ImGui::Begin(name.c_str(), &winOpen, parentWinFlags | ImGuiWindowFlags_NoCollapse)) { //ImGuiWindowFlags_NoBringToFrontOnFocus
+    ImGuiWindowFlags flags = parentWinFlags | ImGuiWindowFlags_NoCollapse; //ImGuiWindowFlags_DockNodeHost
+    if (texWin.editedSinceSaved())
+        flags |= ImGuiWindowFlags_UnsavedDocument;
+    
+    if (ImGui::Begin(name.c_str(), &winOpen, flags)) { //ImGuiWindowFlags_NoBringToFrontOnFocus
+        auto w = ImGui::GetCurrentWindow()->DockNodeAsHost;
+        //if (w)
+        //    w->LocalFlags |= ImGuiDockNodeFlags_NoDocking;
         ImGui::PopStyleVar();
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
@@ -1325,7 +1366,7 @@ size_t TexRip::TexRipper::WinViewManager::getActiveWinID() {
 
 void TexRip::TexRipper::WinViewManager::drawWin() {
     if (winOpen) {
-        static ImGuiWindowFlags WinFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+        static ImGuiWindowFlags WinFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking;
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -1361,7 +1402,7 @@ void TexRip::TexRipper::WinViewManager::drawWin() {
             for (size_t i = 0; i < wins.size(); i++) {
                 ImageRipperWindow* win = wins[i];
 
-                ImGuiDockNodeFlags dockFlags = ImGuiDockNodeFlags_NoTabBar;
+                ImGuiDockNodeFlags dockFlags = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoDocking;
                 if (i != activeWinID && !changed) { // && !changed is used to activate every dockspace on the first frame the docked mode is enabled to prevent issues with never used dockspaces
                     dockFlags |= ImGuiDockNodeFlags_KeepAliveOnly;
                 }
@@ -1596,6 +1637,11 @@ void TexRip::TexRipper::debugDraw() {
     if (wins.size() > 0) {
         const Texture& t = wins[0]->selWin.getInvMats();
         DrawTextureEx(t, { 0,0 }, 0, 10, WHITE);
+
+        auto& recs = wins[0]->selWin.getRecs();
+        if (recs.size() > 0) {
+            DrawRectangle(100, 0, 50, 50, recs.atInd(0).isValid() ? GREEN : RED);
+        }
     }
 }
 

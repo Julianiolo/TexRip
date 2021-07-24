@@ -89,5 +89,8 @@
     <ClInclude Include="..\..\..\..\src\rlImGui\rlImGui.h">
       <Filter>Source Files\rlImGui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\utils\map.h">
+      <Filter>Source Files\utils</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
