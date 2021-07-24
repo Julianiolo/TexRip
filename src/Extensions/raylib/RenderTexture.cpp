@@ -40,12 +40,15 @@ void raylib::RenderTexture::setup(int width, int height, SmoothAmt smth) {
 		setupTex(width, height);
 	}
 	else {
+#if SUPPORT_MSTEX
 		setupMSTex(width,height);
+#endif
 	}
 }
 void raylib::RenderTexture::setupTex(int width, int height) {
 	renderTex = LoadRenderTexture(width, height);
 }
+#if SUPPORT_MSTEX
 void raylib::RenderTexture::setupMSTex(int width, int height) {
 	GL_CHECK(glEnable(GL_MULTISAMPLE));
 
@@ -57,13 +60,16 @@ void raylib::RenderTexture::setupMSTex(int width, int height) {
 	GL_CHECK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msTexId));
 	GL_CHECK(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, smoothing, GL_RGBA8, width, height, false));
 }
+#endif
 
 void raylib::RenderTexture::unload(bool unloadRenderTex) {
 	if (!isMSTex()) {
 		unloadTex();
 	}
 	else {
+#if SUPPORT_MSTEX
 		unloadMSTex();
+#endif
 	}
 }
 void raylib::RenderTexture::unloadTex(bool unloadRenderTex) {
@@ -71,6 +77,7 @@ void raylib::RenderTexture::unloadTex(bool unloadRenderTex) {
 		UnloadRenderTexture(renderTex);
 	}
 }
+#if SUPPORT_MSTEX
 void raylib::RenderTexture::unloadMSTex(bool unloadRenderTex) {
 	glDeleteFramebuffers(1, &fboId);
 	glDeleteTextures(1,&msTexId);
@@ -79,6 +86,7 @@ void raylib::RenderTexture::unloadMSTex(bool unloadRenderTex) {
 		UnloadRenderTexture(renderTex);
 	}
 }
+#endif
 
 void raylib::RenderTexture::setSmoothing(SmoothAmt smth) {
 	if (smth != smoothing) {
@@ -97,8 +105,8 @@ void raylib::RenderTexture::BeginTextureMode() {
 		::BeginTextureMode(renderTex);
 	}
 	else {
+#if SUPPORT_MSTEX
 		rlDrawRenderBatchActive();      // Update and draw internal render batch
-
 		
 		GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, fboId));
 		GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msTexId, 0));
@@ -114,6 +122,7 @@ void raylib::RenderTexture::BeginTextureMode() {
 
 		rlMatrixMode(RL_MODELVIEW);     // Switch back to modelview matrix
 		rlLoadIdentity();               // Reset current matrix (modelview)
+#endif
 	}
 }
 
@@ -122,6 +131,7 @@ void raylib::RenderTexture::EndTextureMode() {
 		::EndTextureMode();
 	}
 	else {
+#if SUPPORT_MSTEX
 		rlDrawRenderBatchActive();      // Update and draw internal render batch
 		
 		GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -134,6 +144,7 @@ void raylib::RenderTexture::EndTextureMode() {
 		GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
 		SetupViewport(0, 0);// Set viewport to default framebuffer size
+#endif
 	}
 }
 
