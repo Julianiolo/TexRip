@@ -41,8 +41,8 @@ void imguiExt::TextUnformattedCentered(const char* text) {
 }
 void imguiExt::TextColoredCentered(const ImVec4& color, const char* text) {
     float contentWidth = ImGui::GetContentRegionAvail().x;
-    auto textWidth   = ImGui::CalcTextSize(text).x;
+    auto textWidth     = ImGui::CalcTextSize(text).x;
 
-    ImGui::SetCursorPosX((contentWidth - textWidth) * 0.5f);
+    ImGui::SetCursorPosX(contentWidth/2 - textWidth/2);
     ImGui::TextColored(color,text);
 }

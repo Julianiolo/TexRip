@@ -1185,8 +1185,8 @@ void TexRip::ImageRipperWindow::oneWinView() {
 
     ImGuiID centralNode = parentDockSpaceID;
     ImGuiID leftID = -1, rightID = -1;
-    auto cNode = ImGui::DockBuilderGetNode(centralNode);
-
+    ImGuiDockNode* cNode = ImGui::DockBuilderGetNode(centralNode);
+    
     if (cNode->IsSplitNode()) {
         ImGui::DockBuilderRemoveNodeChildNodes(centralNode);
     }
