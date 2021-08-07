@@ -958,7 +958,7 @@ Vector2 TexRip::ImageTargetViewer::layoutRecsGrid(utils::Map<size_t, ImgRec>* re
         maxRectDim.y = std::max(maxRectDim.y, r.corrDim.y);
     }
 
-    size_t sideLength = (size_t)std::ceil(std::sqrtf((float)recs->size()));
+    size_t sideLength = (size_t)std::ceil(std::sqrt((float)recs->size()));
 
     Vector2 dim = { 
         (maxRectDim.x + settings.padding) * sideLength,
