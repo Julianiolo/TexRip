@@ -48,18 +48,15 @@ $(DEP_RAYLIB_OUTPATH):$(DEP_RAYLIB_SRC_FILES)
 $(DEP_IMGUI_OUTPATH):$(DEP_IMGUI_OBJ_FILES)
 	$(BASH_PREFX)"mkdir -p $(DEP_IMGUI_BUILD_DIR)"
 	ar rvs $@ $(DEP_IMGUI_OBJ_FILES)
-#cd $(DEP_IMGUI_OBJ_DIR) && 
 
-#$(DEP_IMGUI_DIR)$(shell find $(DEP_IMGUI_DIR) -name '$(notdir %.cpp)')
 $(DEP_IMGUI_OBJ_DIR)%.o: $(DEP_IMGUI_DIR)%.cpp
-#	echo $@ #### $< ####### $> ######### $(DEP_IMGUI_DIR)$(shell find $(DEP_IMGUI_DIR) -name '$(notdir ${@:.o=.cpp})')
 	$(BASH_PREFX)"mkdir -p $(DEP_IMGUI_OBJ_DIR)"
 	$(CPP_COMP) $(CPP_COMP_FLAGS) -c $< -o $@
 
 -include $(DEP_IMGUI_DEP_FILES)
 
-.PHONY:all
+.PHONY:all clean
 
 clean:
-	make -C "$(DEP_RAYLIB_DIR)/src" clean
+	$(MAKE_CMD) -C "$(DEP_RAYLIB_DIR)/src" clean
 	rm -rf $(BUILD_DIR)
