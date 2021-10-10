@@ -69,7 +69,7 @@ void draw() {
 
     TexRip::TexRipper::draw();
 
-    //ImGui::ShowDemoWindow(NULL);
+    ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
     //TexRip::TexRipper::debugDraw();

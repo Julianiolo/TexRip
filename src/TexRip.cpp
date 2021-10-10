@@ -263,7 +263,7 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
                 if (undo()) reRender = true;
             }
 
-            if(IsMouseButtonPressed(Input::mainMouseB())) {
+            if(Input::isMouseActionActive(Input::MouseAction_Select)) {
                 if (selectWithMouse(mousePosTexRel, zoomF)) {
                     reRender = true;
                 }
@@ -279,7 +279,7 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
     }
     else if (mode == MODES::CONSTRUCT) {
         
-        if (IsMouseButtonPressed(Input::secMouseB())) {
+        if (Input::isMouseActionActive(Input::MouseAction_Cancel)) {
             stopPointModeConstruct(true);
         }
         else {
@@ -287,8 +287,8 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
         }
     }
     else { //mode != NONE && mode != CONSTRUCT
-        if (IsMouseButtonPressed(Input::mainMouseB()) || IsMouseButtonPressed(Input::secMouseB())) { // stop/cancel mode
-            stopPointMode(IsMouseButtonPressed(Input::secMouseB()));
+        if (Input::isMouseActionActive(Input::MouseAction_Select) || Input::isMouseActionActive(Input::MouseAction_Cancel)) { // stop/cancel mode
+            stopPointMode(Input::isMouseActionActive(Input::MouseAction_Cancel));
             reRender = true;
             needsMatUpdate = true;
         }
@@ -409,7 +409,7 @@ bool TexRip::ImageSelectionViewer::RectManager::updatePointsConstruct(const Vect
         reRender = true;
     }
 
-    if (IsMouseButtonPressed(Input::mainMouseB())) {
+    if (Input::isMouseActionActive(Input::MouseAction_Select)) {
         rec.progress++;
         rec.pnts[rec.progress].pos = mousePosTexRel;
         if (rec.progress == ImgRec::Prog_FULL) {
@@ -908,8 +908,8 @@ Vector2 TexRip::ImageTargetViewer::layoutRecs(utils::Map<size_t, ImgRec>* recs) 
             return layoutRecsLineWrap(recs);
         case LayoutMode_Grid:
             return layoutRecsGrid(recs);
-        //default:
-            // TODO: error
+        default:
+            abort();
     }
 }
 Vector2 TexRip::ImageTargetViewer::layoutRecsLine(utils::Map<size_t, ImgRec>* recs) {
@@ -988,7 +988,7 @@ void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const
     }
 
     BeginTextureMode(targetTex);
-    Color bg = imguiExt::imColortoRaylib(settings.mainBGColor);
+    Color bg = ImGuiExt::imColortoRaylib(settings.mainBGColor);
     ClearBackground(bg);
 
     BeginShaderMode(ShaderManager::projShader);
@@ -1025,6 +1025,12 @@ void TexRip::ImageTargetViewer::drawMenuBar() {
         ImGui::EndMenuBar();
     }
 }
+void TexRip::ImageTargetViewer::beforeWinDraw(){
+    if(showEdited && editedSinceSaved())
+        winProps.flags |= ImGuiWindowFlags_UnsavedDocument;
+    else
+        winProps.flags &= ~ImGuiWindowFlags_UnsavedDocument;
+}
 void TexRip::ImageTargetViewer::afterWinDraw() {
     if (winProps.isWinHovered && acceptIOKeyCombs) {
         if (Input::isActionActive(Input::Action_save)) {
@@ -1035,22 +1041,24 @@ void TexRip::ImageTargetViewer::afterWinDraw() {
     drawSettings();
 }
 void TexRip::ImageTargetViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
-    switch (settings.layOutMode) {
-        case LayoutMode_LineWrap: {
-            DrawLineEx({                       0, 0 }, {                       0, targetDim.y }, zoomIndependent(1), MAGENTA);
-            DrawLineEx({ settings.layOutMaxWidth, 0 }, { settings.layOutMaxWidth, targetDim.y }, zoomIndependent(1), MAGENTA);
-        } break;
+    if(TexRipper::settings.TargetViewerShowLayoutLines){
+        switch (settings.layOutMode) {
+            case LayoutMode_LineWrap: {
+                DrawLineEx({                       0, 0 }, {                       0, targetDim.y }, zoomIndependent(1), MAGENTA);
+                DrawLineEx({ settings.layOutMaxWidth, 0 }, { settings.layOutMaxWidth, targetDim.y }, zoomIndependent(1), MAGENTA);
+            } break;
+        }
+        DrawRectangleLinesEx({ 0,0,targetDim.x,targetDim.y }, zoomIndependent(1), GREEN);
     }
-    DrawRectangleLinesEx({ 0,0,targetDim.x,targetDim.y }, zoomIndependent(1), GREEN);
 }
 void TexRip::ImageTargetViewer::drawSettings() {
     if (settingsWinOpen) {
         if (ImGui::Begin(settingsTitle.c_str(), &settingsWinOpen, 0)) {
             bool settingsChanged = false;
 
-            if (imguiExt::imguiColorPickerButton("Main Background Color", settings.mainBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
+            if (ImGuiExt::imguiColorPickerButton("Main Background Color", settings.mainBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
                 settingsChanged = true;
-            if (imguiExt::imguiColorPickerButton("Image Background Color", settings.imgBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
+            if (ImGuiExt::imguiColorPickerButton("Image Background Color", settings.imgBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
                 settingsChanged = true;
 
             ImGui::Separator();
@@ -1136,6 +1144,10 @@ void TexRip::ImageTargetViewer::openSettingsWin() {
     }
 }
 
+void TexRip::ImageTargetViewer::setShowEdited(bool show){
+    showEdited = show;
+}
+
 // ###############################################################################################################################
 TexRip::ImageRipperWindow::ImageRipperWindow(const Texture2D& tex, const char* name, ImGuiWindowFlags flags) 
     : selWin(tex, (name+std::string(" - Editor")).c_str(), flags), 
@@ -1198,6 +1210,7 @@ void TexRip::ImageRipperWindow::oneWinView() {
 
     selWin.setWinDocked(true);
     texWin.setWinDocked(true);
+    texWin.setShowEdited(false);
 
     parentWinFlags &= ~ImGuiWindowFlags_NoMove;
     parentWinFlags |= ImGuiWindowFlags_MenuBar;
@@ -1210,6 +1223,7 @@ void TexRip::ImageRipperWindow::floatWinView() {
     
     selWin.setWinDocked(false);
     texWin.setWinDocked(false);
+    texWin.setShowEdited(true);
 }
 
 void TexRip::ImageRipperWindow::drawParentWin() {
@@ -1421,6 +1435,8 @@ TexRip::ImageRipperWindow* TexRip::TexRipper::getActiveWin() {
     return wins[WinViewManager::getActiveWinID()];
 }
 
+TexRip::TexRipper::Settings TexRip::TexRipper::settings;
+
 Vector2 TexRip::TexRipper::lastMousePos = { 0,0 };
 Vector2 TexRip::TexRipper::mouseDelta = { 0,0 };
 bool TexRip::TexRipper::settingsWinOpen = false;
@@ -1612,17 +1628,30 @@ void TexRip::TexRipper::drawSettingsWindow() {
             ImGui::EndChild();
 
             ImGui::SameLine();
-
+            ImGui::BeginChild("Settings_content");
             switch (currentSettingCategory) {
                 case SettingsCategories_General:
+                    drawSettingsGeneral();
                     break;
                 case SettingsCategories_Key_Bindings:
                     Input::drawSettingsTable();
                     break;
             }
+            ImGui::EndChild();
             
         }
         ImGui::End();
+    }
+}
+
+void TexRip::TexRipper::drawSettingsGeneral(){
+    bool reRenderTarget = false;
+    if(ImGui::Checkbox("Show Output Layout Lines", &settings.TargetViewerShowLayoutLines))
+        reRenderTarget = true;
+
+    if(reRenderTarget){
+        for(auto& w : wins)
+            w->texWin.queueRerender();
     }
 }
 

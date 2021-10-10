@@ -5,12 +5,20 @@ else
     detected_OS := $(shell sh -c 'uname 2>/dev/null || echo Unknown')
 endif
 
+ifeq ($(detected_OS),Windows)
+	MAKE_CMD:=mingw32-make
+	BASH_PREFX:=bash -c 
+	OUT_EXT:=.exe
+else
+	MAKE_CMD:=make
+endif
+
 mkfile_path :=$(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir :=$(dir $(mkfile_path))
 
 # configure stuff here:
 
-BUILDMODE ?=RELEASE
+BUILDMODE?=DEBUG
 PLATFORM:=PLATFORM_DESKTOP
 
 CPP_COMP:=g++
@@ -19,15 +27,18 @@ CPP_COMP_CSTD:=-std=c++17
 CPP_COMP_DEP_FLAGS=-MMD -MF ${@:.o=.d}
 CPP_COMP_DEFS:=$(addprefix -D,$(PLATFORM))
 
-MAKE_CMD:=make
+
 
 SRC_DIR:=src/
-BUILD_DIR:=build/make/
+BUILD_DIR:=build/make/$(BUILDMODE)/
 OBJ_DIR:=$(BUILD_DIR)objs/
 DEPENDENCIES_DIR:=dependencies/
 
-OUT_NAME:=TexRip
+
+
+OUT_NAME:=TexRip$(OUT_EXT)
 OUT_DIR:=$(BUILD_DIR)TexRip/
+
 OUT_PATH:=$(OUT_DIR)$(OUT_NAME)
 
 # some if stuff here
@@ -36,10 +47,7 @@ ifeq ($(BUILDMODE),DEBUG)
 	CPP_COMP_FLAGS += -g
 endif
 
-ifeq ($(detected_OS),Windows)
-	MAKE_CMD:=mingw32-make
-	BASH_PREFX:=bash -c 
-endif
+
 
 SRC_FILES:=$(shell $(BASH_PREFX)"find $(SRC_DIR) -name '*.cpp'")
 OBJ_FILES:=$(addprefix $(OBJ_DIR),${SRC_FILES:.cpp=.o})
@@ -55,10 +63,13 @@ DEP_INCLUDE_FLAGS:=$(addprefix -I,$(DEPENDENCIES_INCLUDE_PATHS))
 DEP_LIB_DIR_FLAGS:=$(addprefix -L,$(DEPENDENCIES_LIBS_DIR))
 DEP_LIBS_FLAGS:=$(addprefix -l:,$(DEP_LIBS))
 
+DEP_LIBS_BUILD_DIR:=$(current_dir)$(BUILD_DIR)dependencies/
+DEP_LIBS_DEPS:=dependencies/Makefile $(shell $(BASH_PREFX)"find dependencies/ -name '*h' -o -name '*.c' -o -name '*.cpp'")
+
 ifeq ($(detected_OS),Windows)
 	EXTRA_FLAGS:=-lopengl32 -lgdi32 -lwinmm -static -static-libgcc -static-libstdc++
 	
-	ifeq ($(BUILD_MODE), RELEASE)
+	ifeq ($(BUILDMODE), RELEASE)
 		EXTRA_FLAGS += -Wl,--subsystem,windows
 	endif
 else
@@ -69,8 +80,9 @@ endif
 
 all: $(OUT_PATH)
 
-$(OUT_PATH): deps $(OBJ_FILES)
+$(OUT_PATH):$(DEP_LIBS_BUILD_DIR)depFile.dep $(OBJ_FILES)
 	#BUILDING TEXRIP
+	#$(BASH_PREFX)
 	$(BASH_PREFX)"mkdir -p $(OUT_DIR)"
 	$(CPP_COMP) $(CPP_COMP_FLAGS) $(CPP_COMP_CSTD) $(CPP_COMP_DEFS) $(DEP_LIB_DIR_FLAGS) -o $@ $(OBJ_FILES) $(DEP_LIBS_FLAGS) $(EXTRA_FLAGS)
 	$(BASH_PREFX)"mkdir -p $(OUT_DIR)assets"
@@ -82,7 +94,7 @@ $(OBJ_DIR)%.o:%.cpp
 	$(BASH_PREFX)"mkdir -p $(dir $@)"
 	$(CPP_COMP) $(CPP_COMP_FLAGS) $(CPP_COMP_CSTD) $(CPP_COMP_DEFS) $(CPP_COMP_DEP_FLAGS) $(DEP_INCLUDE_FLAGS) -o $@ -c $<
 
-deps:
+$(DEP_LIBS_BUILD_DIR)depFile.dep:$(DEP_LIBS_DEPS)
 	$(MAKE_CMD) -C $(DEPENDENCIES_DIR) BUILDMODE=$(BUILDMODE) CPP_COMP=$(CPP_COMP) CPP_COMP_FLAGS="$(CPP_COMP_FLAGS)" BUILD_DIR=$(current_dir)$(BUILD_DIR)dependencies/
 
 -include $(DEP_FILES)
@@ -94,4 +106,4 @@ clean:
 	$(MAKE_CMD) -C $(DEPENDENCIES_DIR) clean
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all
+.PHONY: all clean

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include "imgui.h"
 
 class Input {
 public:
@@ -38,7 +39,16 @@ public:
 		Modifier_Alt   = (1<<2),
 	};
 
+	enum MOUSE_ACTIONS{
+		MouseAction_Select = 0,
+		MouseAction_Cancel,
+		MouseAction_MoveCam,
+		MouseAction_COUNT
+	};
+
 private:
+	static constexpr const char* mouseButtonLabels[] = {"Left","Middle","Right"};
+
 	struct ActionStrctKeys {
 		int key;
 		int localKey;
@@ -65,11 +75,20 @@ private:
 		static void startCapture(Action targ);
 
 		static void captureKeys();
+		static bool isCapturing();
+	};
+
+	typedef uint32_t MouseAction;
+	struct MouseActionStrct{
+		int button;
+		int defButton;
 	};
 	
 
 	static ActionStrct actionsArr[Action_COUNT];
 	static bool inputEnabled;
+
+	static MouseActionStrct mouseActionsArr[MouseAction_COUNT];
 
 	static void initActionsArrToDefault();
 	static void initDefaultActionsArr();
@@ -78,18 +97,17 @@ private:
 
 	static int toLocalKey(int key);
 	static std::string generateActionKeyName(const ActionStrctKeys& a);
+
+	static void drawMouseSelectSwitchPro(MouseAction action);
 public:
 	static void init();
-
-	static int mainMouseB();
-	static int secMouseB();
-	static int midMouseB();
 
 	static bool modShift();
 	static bool modCtrl();
 	static bool modAlt();
 
 	static bool isActionActive(Action action, ActionState actionState = ActionState_Pressed);
+	static bool isMouseActionActive(MouseAction action, ActionState actionState = ActionState_Pressed);
 
 	static const std::string& getActionKeyName(Action action);
 

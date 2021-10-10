@@ -8,6 +8,8 @@
 
 #include "rlImGui/rlImGui.h"
 
+#include "Input.h"
+
 World2DViewer::World2DViewer(const char* name, ImGuiWindowFlags flags) {
     winProps.windowName = name;
     winProps.flags = flags;
@@ -26,6 +28,9 @@ void World2DViewer::drawWorld(const Vector2& mousePos, const Vector2& mouseDelta
 
 }
 void World2DViewer::drawMenuBar() {
+
+}
+void World2DViewer::beforeWinDraw(){
 
 }
 void World2DViewer::afterWinDraw() {
@@ -76,12 +81,14 @@ bool World2DViewer::update(const Vector2& mouseDelta) {
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE)) {
+        if (Input::isMouseActionActive(Input::MouseAction_MoveCam)) {
             isMoving = true;
         }
     }
 
-    if (isMoving && (IsMouseButtonReleased(MOUSE_BUTTON_MIDDLE) || IsMouseButtonUp(MOUSE_BUTTON_MIDDLE))) {
+    if (isMoving 
+        && (Input::isMouseActionActive(Input::MouseAction_MoveCam, Input::ActionState_Released) 
+                || Input::isMouseActionActive(Input::MouseAction_MoveCam, Input::ActionState_Up))) {
         isMoving = false;
     }
 
@@ -96,6 +103,8 @@ bool World2DViewer::update(const Vector2& mouseDelta) {
 }
 void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
     if (winProps.winOpen) {
+        beforeWinDraw();
+
         ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_FirstUseEver);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         if (ImGui::Begin(winProps.windowName.c_str(), winProps.winOpenPtr, winProps.flags | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {

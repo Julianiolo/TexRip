@@ -40,6 +40,7 @@ ifeq ($(detected_OS),Windows)
 endif
 
 all:$(DEP_IMGUI_OUTPATH) $(DEP_RAYLIB_OUTPATH)
+	$(BASH_PREFX)"touch $(BUILD_DIR)depFile.dep";
 
 $(DEP_RAYLIB_OUTPATH):$(DEP_RAYLIB_SRC_FILES)
 	$(BASH_PREFX)"mkdir -p $(DEP_RAYLIB_BUILD_DIR)"

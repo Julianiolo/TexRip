@@ -222,8 +222,13 @@ namespace TexRip {
 
         void drawMenuBarFile();
         void drawMenuBarSettings();
+
+        void setShowEdited(bool show);
     protected:
+        bool showEdited = false;
+
         void drawMenuBar() override;
+        void beforeWinDraw() override;
         void afterWinDraw() override;
         void drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) override;
         void drawSettings();
@@ -275,6 +280,8 @@ namespace TexRip {
         ImGuiWindowFlags parentWinFlags = ImGuiWindowFlags_MenuBar;
         ImGuiID parentDockSpaceID;
 
+        
+
         void update();
 
         void drawParentWin();
@@ -285,6 +292,10 @@ namespace TexRip {
     };
 
     class TexRipper {
+    public:
+        static struct Settings{
+            bool TargetViewerShowLayoutLines = true;
+        } settings;
     protected:
         static Vector2 lastMousePos;
         static Vector2 mouseDelta;
@@ -341,6 +352,7 @@ namespace TexRip {
 
         static void drawMainMenuBar();
         static void drawSettingsWindow();
+        static void drawSettingsGeneral();
     public:
         static void init();
         static void destroy();
