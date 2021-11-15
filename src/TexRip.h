@@ -10,11 +10,53 @@
 
 namespace TexRip {
     struct ImgPoint {
-        Vector2 pos;
+        Vector2 pos = { 0,0 };
         bool selected;
-        bool candidate;
+        bool candidate = false;
     };
+
+    struct Rec {
+        ImgPoint pnts[4];
+        bool isValidPerspRec() const;
+        void expandPerspFitRec(const Rec& rec);
+    };
+
     class ImgRec {
+    public:
+        enum {
+            Type_Simple,
+            Type_2Part
+        };
+
+        struct Colors {
+            Color line;
+            Color lineSel; 
+            Color pnt; 
+            Color pntSel;
+        };
+
+        static Colors standardColors;
+
+        Rec rec;
+        Vector2 lastRipPos[4];
+        float persp[9];
+        float inv_persp[9];
+        Vector2 outPos;
+        Vector2 corrDim;
+        int8_t progress = 4;
+
+        virtual bool needsUpdate() const = NULL;
+        virtual void calcPersp(const Vector2& imgDim) = NULL;
+
+        void drawRecRaw(const Rec& rec, int8_t progress_, const Colors& colors, float zoomf);
+        void drawRecPersLines(float w, float h,float zoomf);
+
+        virtual uint8_t getType() const = NULL;
+        virtual bool isComplete() const = NULL;
+        virtual std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) = NULL;
+        virtual void draw(float w, float h,float zoomf) = NULL;
+    };
+    class ImgRecSimple : public ImgRec {
     public:
         enum PROGRESS {
             Prog_0 = 0,
@@ -24,21 +66,42 @@ namespace TexRip {
             Prog_FULL = 4
         };
 
-        ImgPoint pnts[4];
-        Vector2 lastRipPos[4];
-        float persp[9];
-        float inv_persp[9];
-        Vector2 outPos;
-        Vector2 corrDim;
-        uint8_t progress = Prog_FULL;
+        ImgRecSimple();
+        ImgRecSimple(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector2& pos4, const Vector2& imgDim);
 
-        ImgRec();
-        ImgRec(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector2& pos4, const Vector2& imgDim);
+        uint8_t getType() const override;
+        bool needsUpdate() const override;
+        void calcPersp(const Vector2& imgDim) override;
+        bool isComplete() const override;
+        std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) override;
+        void draw(float w, float h,float zoomf) override;
+    };
 
-        void calcPersp(const Vector2& imgDim);
+    class ImgRec2part : public ImgRec {
+    public:
+        enum PROGRESS {
+            Prog_0_0 = 0,
+            Prog_0_1 = 1,
+            Prog_0_2 = 2,
+            Prog_0_3 = 3,
+            Prog_1_0 = 4,
+            Prog_1_1 = 5,
+            Prog_1_2 = 6,
+            Prog_1_3 = 7,
+            Prog_FULL = 8
+        };
 
-        Rectangle boundingBox() const;
-        bool isValid() const;
+        static Colors displayColors;
+
+        Rec recDisplay;
+        Vector2 lastDisplayPos[4];
+
+        uint8_t getType() const override;
+        bool needsUpdate() const override;
+        void calcPersp(const Vector2& imgDim) override;
+        bool isComplete() const override;
+        std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) override;
+        void draw(float w, float h,float zoomf) override;
     };
 
     class ImageRipChildWin : public TextureViewer {
@@ -62,6 +125,8 @@ namespace TexRip {
                 SCALE,
                 CONSTRUCT
             };
+
+            int addRectType = ImgRec::Type_Simple;
             
         private:
 
@@ -74,12 +139,16 @@ namespace TexRip {
                 PersMat();
                 ~PersMat();
 
-                void updateWithRecs(const utils::Map<size_t, ImgRec>& recs, bool inverse);
+                void updateWithRecs(const utils::Map<size_t, ImgRec*>& recs, bool inverse);
             };
 
             struct RectPointID {
                 size_t rectID;
                 uint8_t pointID;
+
+                inline bool operator<(const RectPointID& b) const {
+                    return ((rectID << 8) | pointID) < ((b.rectID << 8) | b.pointID);
+                }
             };
 
             bool worldMayMove = true;
@@ -89,10 +158,12 @@ namespace TexRip {
 
             bool pointsWereMoved = false;
 
-            //std::vector<ImgRec> recs;
-            utils::Map<size_t, ImgRec> recs;
+            //std::vector<ImgRec*> recs;
+            utils::Map<size_t, ImgRec*> recs;
+            utils::Map<RectPointID, ImgPoint*> points;
+            
             size_t ID_counter = 0;
-            OverrideStack<utils::Map<size_t, ImgRec>> undoBuffer;
+            OverrideStack<utils::Map<size_t, ImgRec*>> undoBuffer;
 
             uint8_t mode = MODES::NONE;
             bool needsMatUpdate = true;
@@ -112,11 +183,11 @@ namespace TexRip {
 
         public:
             RectManager();
+            ~RectManager();
             
             bool managePoints(const Vector2& mousePosTexRel, const Vector2& mouseDeltaTexRel, const float zoomF, const bool winIsHovered, const Vector2& texSize); // returns true if reRender is needed
 
-            utils::Map<size_t, ImgRec>& getRecs();
-            size_t addRect(const ImgRec& rect);
+            utils::Map<size_t, ImgRec*>& getRecs();
             uint8_t getMode() const;
             bool werePointsMoved() const;
             bool mayWorldMove() const;
@@ -151,6 +222,8 @@ namespace TexRip {
             void selectAllOrNone(int force = -1);
             void selectLinked();
 
+            void removeRect(const size_t& id);
+
             RectPointID getSelPointInd(const Vector2& mousePosTexRel, const float zoomF, bool deselect);
             Vector2 getMeanSelPntPos(int& numRef) const;
 
@@ -166,7 +239,7 @@ namespace TexRip {
         ImageSelectionViewer(const Texture2D& tex, const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
         ~ImageSelectionViewer();
 
-        utils::Map<size_t, ImgRec>& getRecs();
+        utils::Map<size_t, ImgRec*>& getRecs();
 
         void openFile();
 
@@ -176,21 +249,17 @@ namespace TexRip {
         const Texture& getInvMats() const;
 
         void drawMenuBarFile();
+        static Vector2 getPosPersp(const Vector2& pos, const float* mat);
     protected:
         void drawMenuBar() override;
         bool ownUpdate(const Vector2& mousePos, const Vector2& mouseDelta) override;
         void drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) override;
         void afterWinDraw() override;
+        void drawRaw() override;
 
         // Point/Rect related stuff
-        void drawRec(const ImgRec& rec, Color lineC, Color lineCSel, Color pntC, Color pntCSel);
-
         bool managePoints(const Vector2& mousePos, const Vector2& mouseDelta);
         void updateRecMats(const Vector2& texSize);
-
-        // other stuff
-        Vector2 getPosPersp(const Vector2& pos, const float* mat);
-        Vector2 getPosPersp2(const Vector2& pos, const float* mat);
     };
 
     class ImageTargetViewer : public ImageRipChildWin {
@@ -215,7 +284,7 @@ namespace TexRip {
         ImageTargetViewer(const char* name, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
         ~ImageTargetViewer(); 
 
-        void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, utils::Map<size_t, ImgRec>& recs);
+        void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, utils::Map<size_t, ImgRec*>& recs);
         bool save();
         bool saveAs();
         bool editedSinceSaved();
@@ -235,10 +304,10 @@ namespace TexRip {
             LayoutMode_LineWrap,
             LayoutMode_Grid
         };
-        Vector2 layoutRecs(utils::Map<size_t, ImgRec>* recs);
-        Vector2 layoutRecsLine(utils::Map<size_t, ImgRec>* recs);
-        Vector2 layoutRecsLineWrap(utils::Map<size_t, ImgRec>* recs);
-        Vector2 layoutRecsGrid(utils::Map<size_t, ImgRec>* recs);
+        Vector2 layoutRecs(utils::Map<size_t, ImgRec*>* recs);
+        Vector2 layoutRecsLine(utils::Map<size_t, ImgRec*>* recs);
+        Vector2 layoutRecsLineWrap(utils::Map<size_t, ImgRec*>* recs);
+        Vector2 layoutRecsGrid(utils::Map<size_t, ImgRec*>* recs);
 
         bool saveTex(const char* path);
         bool editedSinceSavedB = true;

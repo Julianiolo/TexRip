@@ -55,7 +55,8 @@ void setup() {
 
     //PlatformTools::SetWindowHandle(GetWindowHandleNative());
     TexRip::TexRipper::init();
-    TexRip::TexRipper::addImage("Thing", LoadTexture("assets/ressources/img2.png"));
+    //TexRip::TexRipper::addImage("Thing", LoadTexture("assets/ressources/img2.png"));
+    TexRip::TexRipper::addImage("Controller", LoadTexture("C:/Users/Julian/Desktop/Dateien/Inkscape/WhatsApp Image 2021-11-03 at 16.54.57.jpeg"));
     std::cout << GetWorkingDirectory() << std::endl;
 }
 void draw() {
@@ -69,7 +70,7 @@ void draw() {
 
     TexRip::TexRipper::draw();
 
-    //ImGui::ShowDemoWindow(NULL);
+    ImGui::ShowDemoWindow(NULL);
     EndRLImGui();
 
     //TexRip::TexRipper::debugDraw();

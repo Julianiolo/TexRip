@@ -50,6 +50,7 @@ protected:
     virtual void sizeUpdate(ImVec2 size);
     virtual void renderTexInit();
     virtual bool ownUpdate(const Vector2& mousePos, const Vector2& mouseDelta);
+    virtual void drawRaw();
 
     void setCamTarget(const Vector2& targ);
     Vector2 renderTexSize();

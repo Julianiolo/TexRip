@@ -40,6 +40,9 @@ void World2DViewer::renderTexInit() {
 bool World2DViewer::ownUpdate(const Vector2& mousePos, const Vector2& mouseDelta) {
     return false;
 }
+void World2DViewer::drawRaw() {
+
+}
 
 void World2DViewer::addWindowFlags(ImGuiWindowFlags flgs) {
     winProps.flags |= flgs;
@@ -146,6 +149,8 @@ void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
 
             ImGui::SetCursorScreenPos(getTexDrawCursorPos());
             RLImGuiImageRect(&renderTex.texture, renderTex.texture.width, renderTex.texture.height, { 0,0,(float)renderTex.texture.width,-((float)renderTex.texture.height) });
+
+            drawRaw();
         }
         ImGui::End();
         ImGui::PopStyleVar();
