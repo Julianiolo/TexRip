@@ -1,15 +1,17 @@
 #include "TexRip.h"
+
+#include <cmath> // std::ceil, std::sqrt
+#include <string>
+
 #include "oneHeaderLibs/VectorOperators.h"
 #include "raymath.h"
-#include <string>
+
 #include "shaders.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "utils/utils.h"
 #include "Input.h"
-#include "rlgl.h"
 #include "Extensions/imgui/imguiExts.h"
-#include <cmath>
 #include "ImGuiFileDialog.h"
 
 //#include "fromJeffMTestframe/Application/platform_tools.h"
@@ -906,8 +908,15 @@ void TexRip::ImageSelectionViewer::drawOverlay(const Vector2& mousePos, const Ve
 void TexRip::ImageSelectionViewer::afterWinDraw() {
     if (winProps.isWinHovered && acceptIOKeyCombs) {
         if (Input::isActionActive(Input::Action_open)) {
-            openFile();
+            tryOpenFile();
         }
+    }
+
+    if (ImGuiFileDialog::Instance()->Display("ChooseOpenFile")) {
+        if (ImGuiFileDialog::Instance()->IsOk()) {
+            openFile(ImGuiFileDialog::Instance()->GetFilePathName().c_str());
+        }
+        ImGuiFileDialog::Instance()->Close();
     }
 }
 void TexRip::ImageSelectionViewer::drawRaw() {
@@ -948,12 +957,12 @@ Vector2 TexRip::ImageSelectionViewer::getPosPersp(const Vector2& pos, const floa
     return res;
 }
 
-void TexRip::ImageSelectionViewer::openFile() {
-    std::string path = "";//PlatformTools::ShowOpenFileDialog("some.png");
-    if (path != "") {
-        setTex(LoadTexture(path.c_str()));
-        changedImage = true;
-    }
+void TexRip::ImageSelectionViewer::tryOpenFile() {
+    ImGuiFileDialog::Instance()->OpenModal("ChooseOpenFile", "Choose Image", "", ".");
+}
+void TexRip::ImageSelectionViewer::openFile(const char* path) {
+    setTex(LoadTexture(path));
+    changedImage = true;
 }
 
 bool TexRip::ImageSelectionViewer::wasImageChanged() {
@@ -971,7 +980,7 @@ const Texture& TexRip::ImageSelectionViewer::getInvMats() const {
 
 void TexRip::ImageSelectionViewer::drawMenuBarFile() {
     if (ImGui::MenuItem("Open", Input::getActionKeyName(Input::Action_open).c_str())) {
-        openFile();
+        tryOpenFile();
     }
 }
 
@@ -1124,6 +1133,14 @@ void TexRip::ImageTargetViewer::afterWinDraw() {
         }
     }
 
+    if (ImGuiFileDialog::Instance()->Display("ChooseSaveDest")) {
+        if (ImGuiFileDialog::Instance()->IsOk()) {
+            saveTex((ImGuiFileDialog::Instance()->GetFilePathName()).c_str());
+        }
+
+        ImGuiFileDialog::Instance()->Close();
+    }
+
     drawSettings();
 }
 void TexRip::ImageTargetViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
@@ -1170,22 +1187,16 @@ void TexRip::ImageTargetViewer::drawSettings() {
     }
 }
 
-bool TexRip::ImageTargetViewer::save() {
+void TexRip::ImageTargetViewer::save() {
     if (lastSavePath != "") {
-        return saveTex(lastSavePath.c_str());
+        saveTex(lastSavePath.c_str());
     }
     else {
-        return saveAs();
+        saveAs();
     }
 }
-bool TexRip::ImageTargetViewer::saveAs() {
-    std::string savePath = "test.jpg";//PlatformTools::ShowSaveFileDialog("unnamed.png");
-    if (savePath != "") { // not cancelled
-        return saveTex(savePath.c_str());
-    }
-    else {
-        return false;
-    }
+void TexRip::ImageTargetViewer::saveAs() {
+    ImGuiFileDialog::Instance()->OpenModal("ChooseSaveDest","Choose Destination", ".png,.jpg,.tif",".");
 }
 bool TexRip::ImageTargetViewer::saveTex(const char* path) {
     bool success;
@@ -1354,15 +1365,14 @@ void TexRip::ImageRipperWindow::dontYouWantToSave() {
         ImGui::Separator();
 
         if (ImGui::Button("Discard", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
             close();
-            ImGui::CloseCurrentPopup(); 
         }
         ImGui::SameLine();
         if (ImGui::Button("Save", ImVec2(120, 0))) {
-            if (texWin.save()) {
-                close();
-                ImGui::CloseCurrentPopup(); 
-            }
+            texWin.save();
+            ImGui::CloseCurrentPopup();
+            close();
         }
         ImGui::SetItemDefaultFocus();
         ImGui::SameLine();
@@ -1370,8 +1380,16 @@ void TexRip::ImageRipperWindow::dontYouWantToSave() {
             winOpen = true;
             ImGui::CloseCurrentPopup();
         }
+
+        if (!texWin.editedSinceSaved()) {
+            ImGui::CloseCurrentPopup();
+            close();
+        }
+
         ImGui::EndPopup();
     }
+
+    
 }
 bool TexRip::ImageRipperWindow::isWinOpen() {
     return toDelete;
@@ -1383,6 +1401,9 @@ void TexRip::ImageRipperWindow::close() {
     selWin.winProps.winOpen = false;
     texWin.winProps.winOpen = false;
     toDelete = true;
+}
+bool TexRip::ImageRipperWindow::wantsToClose() const {
+    return winOpen;
 }
 
 // ###############################################################################################################################

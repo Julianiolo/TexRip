@@ -241,7 +241,7 @@ namespace TexRip {
 
         utils::Map<size_t, ImgRec*>& getRecs();
 
-        void openFile();
+        void tryOpenFile();
 
         bool wasImageChanged();
         bool werePointsMoved() const;
@@ -251,6 +251,7 @@ namespace TexRip {
         void drawMenuBarFile();
         static Vector2 getPosPersp(const Vector2& pos, const float* mat);
     protected:
+        void openFile(const char* path);
         void drawMenuBar() override;
         bool ownUpdate(const Vector2& mousePos, const Vector2& mouseDelta) override;
         void drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) override;
@@ -285,8 +286,8 @@ namespace TexRip {
         ~ImageTargetViewer(); 
 
         void rerenderTargetTex(const Texture2D& srcTex, const Texture2D& mats, utils::Map<size_t, ImgRec*>& recs);
-        bool save();
-        bool saveAs();
+        void save();
+        void saveAs();
         bool editedSinceSaved();
 
         void drawMenuBarFile();
@@ -336,6 +337,7 @@ namespace TexRip {
         bool isWinOpen();
         void tryClose();
         void close();
+        bool wantsToClose() const;
 
         ImGuiID externalDockSpaceID;
     protected:

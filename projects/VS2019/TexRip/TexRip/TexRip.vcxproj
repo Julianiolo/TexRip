@@ -121,8 +121,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\ImGuiFileDialog\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;ImGuiFileDialog.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Command>
@@ -148,8 +148,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\ImGuiFileDialog\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;ImGuiFileDialog.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Command>
@@ -171,8 +171,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\ImGuiFileDialog\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;ImGuiFileDialog.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Command>
@@ -198,8 +198,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\libs\raylib\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\Dear ImGui\bin\$(Platform)\$(Configuration)\;$(SolutionDir)build\libs\ImGuiFileDialog\bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>raylib.lib;Dear ImGui.lib;ImGuiFileDialog.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Command>
