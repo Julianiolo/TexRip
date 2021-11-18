@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) TexRip",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/make/DEBUG/TexRip/TexRip.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/make/DEBUG/TexRip/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            //"miDebuggerPath": "",
+            "setupCommands": [
+                {
+                    "description": "Automatische Strukturierung und Einrückung für \"gdb\" aktivieren",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "make build Debug"
+        }
+    ]
+}

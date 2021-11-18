@@ -2,6 +2,7 @@
 
 #include <cmath> // std::ceil, std::sqrt
 #include <string>
+#include <algorithm> // std::min, std::max
 
 #include "oneHeaderLibs/VectorOperators.h"
 #include "raymath.h"
@@ -12,7 +13,6 @@
 #include "utils/utils.h"
 #include "Input.h"
 #include "Extensions/imgui/imguiExts.h"
-#include "ImGuiFileDialog.h"
 
 //#include "fromJeffMTestframe/Application/platform_tools.h"
 
@@ -401,7 +401,7 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
                 if (undo()) reRender = true;
             }
 
-            if(IsMouseButtonPressed(Input::mainMouseB())) {
+            if(Input::isMouseActionActive(Input::MouseAction_Select)) {
                 if (selectWithMouse(mousePosTexRel, zoomF)) {
                     reRender = true;
                 }
@@ -417,7 +417,7 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
     }
     else if (mode == MODES::CONSTRUCT) {
         
-        if (IsMouseButtonPressed(Input::secMouseB())) {
+        if (Input::isMouseActionActive(Input::MouseAction_Cancel)) {
             stopPointModeConstruct(true);
         }
         else {
@@ -425,8 +425,8 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
         }
     }
     else { //mode != NONE && mode != CONSTRUCT
-        if (IsMouseButtonPressed(Input::mainMouseB()) || IsMouseButtonPressed(Input::secMouseB())) { // stop/cancel mode
-            stopPointMode(IsMouseButtonPressed(Input::secMouseB()));
+        if (Input::isMouseActionActive(Input::MouseAction_Select) || Input::isMouseActionActive(Input::MouseAction_Cancel)) { // stop/cancel mode
+            stopPointMode(Input::isMouseActionActive(Input::MouseAction_Cancel));
             reRender = true;
             needsMatUpdate = true;
         }
@@ -551,11 +551,12 @@ std::pair<bool,bool> TexRip::ImgRecSimple::updateConstruct(const Vector2& mouseP
         reRender = true;
     }
 
-    if (IsMouseButtonPressed(Input::mainMouseB())) {
+    if(Input::isMouseActionActive(Input::MouseAction_Select)) {
         progress++;
-        rec.pnts[progress].pos = mousePosTexRel;
         if (isComplete()) {
             stopCnstctMode = true;
+        }else{
+            rec.pnts[progress].pos = mousePosTexRel;
         }
         reRender = true;
     }
@@ -578,7 +579,7 @@ std::pair<bool,bool> TexRip::ImgRec2part::updateConstruct(const Vector2& mousePo
         reRender = true;
     }
 
-    if (IsMouseButtonPressed(Input::mainMouseB())) {
+    if (Input::isMouseActionActive(Input::MouseAction_Select)) {
         progress++;
         if (isComplete()) {
             stopCnstctMode = true;
@@ -911,13 +912,14 @@ void TexRip::ImageSelectionViewer::afterWinDraw() {
             tryOpenFile();
         }
     }
-
+    /*
     if (ImGuiFileDialog::Instance()->Display("ChooseOpenFile")) {
         if (ImGuiFileDialog::Instance()->IsOk()) {
             openFile(ImGuiFileDialog::Instance()->GetFilePathName().c_str());
         }
         ImGuiFileDialog::Instance()->Close();
     }
+    */
 }
 void TexRip::ImageSelectionViewer::drawRaw() {
     ImGui::SetCursorPos({ 0,0 });
@@ -958,7 +960,7 @@ Vector2 TexRip::ImageSelectionViewer::getPosPersp(const Vector2& pos, const floa
 }
 
 void TexRip::ImageSelectionViewer::tryOpenFile() {
-    ImGuiFileDialog::Instance()->OpenModal("ChooseOpenFile", "Choose Image", "", ".");
+    //ImGuiFileDialog::Instance()->OpenModal("ChooseOpenFile", "Choose Image", "", ".");
 }
 void TexRip::ImageSelectionViewer::openFile(const char* path) {
     setTex(LoadTexture(path));
@@ -1089,7 +1091,7 @@ void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const
     }
 
     BeginTextureMode(targetTex);
-    Color bg = imguiExt::imColortoRaylib(settings.mainBGColor);
+    Color bg = ImGuiExt::imColortoRaylib(settings.mainBGColor);
     ClearBackground(bg);
 
     BeginShaderMode(ShaderManager::projShader);
@@ -1126,13 +1128,19 @@ void TexRip::ImageTargetViewer::drawMenuBar() {
         ImGui::EndMenuBar();
     }
 }
+void TexRip::ImageTargetViewer::beforeWinDraw(){
+    if(showEdited && editedSinceSaved())
+        winProps.flags |= ImGuiWindowFlags_UnsavedDocument;
+    else
+        winProps.flags &= ~ImGuiWindowFlags_UnsavedDocument;
+}
 void TexRip::ImageTargetViewer::afterWinDraw() {
     if (winProps.isWinHovered && acceptIOKeyCombs) {
         if (Input::isActionActive(Input::Action_save)) {
             save();
         }
     }
-
+    /*
     if (ImGuiFileDialog::Instance()->Display("ChooseSaveDest")) {
         if (ImGuiFileDialog::Instance()->IsOk()) {
             saveTex((ImGuiFileDialog::Instance()->GetFilePathName()).c_str());
@@ -1140,26 +1148,29 @@ void TexRip::ImageTargetViewer::afterWinDraw() {
 
         ImGuiFileDialog::Instance()->Close();
     }
+    */
 
     drawSettings();
 }
 void TexRip::ImageTargetViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
-    switch (settings.layOutMode) {
-        case LayoutMode_LineWrap: {
-            DrawLineEx({                       0, 0 }, {                       0, targetDim.y }, zoomIndependent(1), MAGENTA);
-            DrawLineEx({ settings.layOutMaxWidth, 0 }, { settings.layOutMaxWidth, targetDim.y }, zoomIndependent(1), MAGENTA);
-        } break;
+    if(TexRipper::settings.TargetViewerShowLayoutLines){
+        switch (settings.layOutMode) {
+            case LayoutMode_LineWrap: {
+                DrawLineEx({                       0, 0 }, {                       0, targetDim.y }, zoomIndependent(1), MAGENTA);
+                DrawLineEx({ settings.layOutMaxWidth, 0 }, { settings.layOutMaxWidth, targetDim.y }, zoomIndependent(1), MAGENTA);
+            } break;
+        }
+        DrawRectangleLinesEx({ 0,0,targetDim.x,targetDim.y }, zoomIndependent(1), GREEN);
     }
-    DrawRectangleLinesEx({ 0,0,targetDim.x,targetDim.y }, zoomIndependent(1), GREEN);
 }
 void TexRip::ImageTargetViewer::drawSettings() {
     if (settingsWinOpen) {
         if (ImGui::Begin(settingsTitle.c_str(), &settingsWinOpen, 0)) {
             bool settingsChanged = false;
 
-            if (imguiExt::imguiColorPickerButton("Main Background Color", settings.mainBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
+            if (ImGuiExt::imguiColorPickerButton("Main Background Color", settings.mainBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
                 settingsChanged = true;
-            if (imguiExt::imguiColorPickerButton("Image Background Color", settings.imgBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
+            if (ImGuiExt::imguiColorPickerButton("Image Background Color", settings.imgBGColor, {ImGui::GetContentRegionAvail().x*0.2f,0}))
                 settingsChanged = true;
 
             ImGui::Separator();
@@ -1196,7 +1207,7 @@ void TexRip::ImageTargetViewer::save() {
     }
 }
 void TexRip::ImageTargetViewer::saveAs() {
-    ImGuiFileDialog::Instance()->OpenModal("ChooseSaveDest","Choose Destination", ".png,.jpg,.tif",".");
+    //ImGuiFileDialog::Instance()->OpenModal("ChooseSaveDest","Choose Destination", ".png,.jpg,.tif",".");
 }
 bool TexRip::ImageTargetViewer::saveTex(const char* path) {
     bool success;
@@ -1237,6 +1248,10 @@ void TexRip::ImageTargetViewer::openSettingsWin() {
     else {
         ImGui::SetWindowFocus(settingsTitle.c_str());
     }
+}
+
+void TexRip::ImageTargetViewer::setShowEdited(bool show){
+    showEdited = show;
 }
 
 // ###############################################################################################################################
@@ -1301,6 +1316,7 @@ void TexRip::ImageRipperWindow::oneWinView() {
 
     selWin.setWinDocked(true);
     texWin.setWinDocked(true);
+    texWin.setShowEdited(false);
 
     parentWinFlags &= ~ImGuiWindowFlags_NoMove;
     parentWinFlags |= ImGuiWindowFlags_MenuBar;
@@ -1313,6 +1329,7 @@ void TexRip::ImageRipperWindow::floatWinView() {
     
     selWin.setWinDocked(false);
     texWin.setWinDocked(false);
+    texWin.setShowEdited(true);
 }
 
 void TexRip::ImageRipperWindow::drawParentWin() {
@@ -1534,6 +1551,8 @@ TexRip::ImageRipperWindow* TexRip::TexRipper::getActiveWin() {
     return wins[WinViewManager::getActiveWinID()];
 }
 
+TexRip::TexRipper::Settings TexRip::TexRipper::settings;
+
 Vector2 TexRip::TexRipper::lastMousePos = { 0,0 };
 Vector2 TexRip::TexRipper::mouseDelta = { 0,0 };
 bool TexRip::TexRipper::settingsWinOpen = false;
@@ -1725,17 +1744,30 @@ void TexRip::TexRipper::drawSettingsWindow() {
             ImGui::EndChild();
 
             ImGui::SameLine();
-
+            ImGui::BeginChild("Settings_content");
             switch (currentSettingCategory) {
                 case SettingsCategories_General:
+                    drawSettingsGeneral();
                     break;
                 case SettingsCategories_Key_Bindings:
                     Input::drawSettingsTable();
                     break;
             }
+            ImGui::EndChild();
             
         }
         ImGui::End();
+    }
+}
+
+void TexRip::TexRipper::drawSettingsGeneral(){
+    bool reRenderTarget = false;
+    if(ImGui::Checkbox("Show Output Layout Lines", &settings.TargetViewerShowLayoutLines))
+        reRenderTarget = true;
+
+    if(reRenderTarget){
+        for(auto& w : wins)
+            w->texWin.queueRerender();
     }
 }
 

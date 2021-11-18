@@ -46,6 +46,7 @@ public:
 protected:
     virtual void drawWorld(const Vector2& mousePos, const Vector2& mouseDelta);
     virtual void drawMenuBar();
+    virtual void beforeWinDraw();
     virtual void afterWinDraw();
     virtual void sizeUpdate(ImVec2 size);
     virtual void renderTexInit();
