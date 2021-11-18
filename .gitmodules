@@ -7,3 +7,6 @@
 [submodule "dependencies/eigen"]
 	path = dependencies/eigen
 	url = https://gitlab.com/libeigen/eigen.git
+[submodule "dependencies/ImGuiFD"]
+	path = dependencies/ImGuiFD
+	url = https://github.com/Julianiolo/ImGuiFD.git
