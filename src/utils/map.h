@@ -73,6 +73,14 @@ namespace utils {
 			return map.end();
 		}
 
+		auto cbegin() const {
+			return map.cbegin();
+		}
+
+		auto cend() const {
+			return map.cend();
+		}
+
 		size_t size() const {
 			return map.size();
 		}

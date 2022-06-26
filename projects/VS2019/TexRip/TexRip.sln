@@ -7,14 +7,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TexRip", "TexRip\TexRip.vcx
 	ProjectSection(ProjectDependencies) = postProject
 		{E89D61AC-55DE-4482-AFD4-DF7242EBC859} = {E89D61AC-55DE-4482-AFD4-DF7242EBC859}
 		{299A5CB5-EE0E-474A-9FB0-09DDAE72E914} = {299A5CB5-EE0E-474A-9FB0-09DDAE72E914}
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273} = {73FA4AEB-6C38-4121-9C30-C5B0C7041273}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "raylib", "..\..\..\dependencies\raylib\projects\VS2019\raylib\raylib.vcxproj", "{E89D61AC-55DE-4482-AFD4-DF7242EBC859}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Dear ImGui", "Dear ImGui\Dear ImGui.vcxproj", "{299A5CB5-EE0E-474A-9FB0-09DDAE72E914}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImGuiFileDialog", "ImGuiFileDialog\ImGuiFileDialog.vcxproj", "{73FA4AEB-6C38-4121-9C30-C5B0C7041273}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,22 +73,6 @@ Global
 		{299A5CB5-EE0E-474A-9FB0-09DDAE72E914}.Release|x64.Build.0 = Release|x64
 		{299A5CB5-EE0E-474A-9FB0-09DDAE72E914}.Release|x86.ActiveCfg = Release|Win32
 		{299A5CB5-EE0E-474A-9FB0-09DDAE72E914}.Release|x86.Build.0 = Release|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug.DLL|x64.ActiveCfg = Debug|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug.DLL|x64.Build.0 = Debug|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug.DLL|x86.ActiveCfg = Debug|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug.DLL|x86.Build.0 = Debug|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug|x64.ActiveCfg = Debug|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug|x64.Build.0 = Debug|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug|x86.ActiveCfg = Debug|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Debug|x86.Build.0 = Debug|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release.DLL|x64.ActiveCfg = Release|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release.DLL|x64.Build.0 = Release|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release.DLL|x86.ActiveCfg = Release|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release.DLL|x86.Build.0 = Release|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release|x64.ActiveCfg = Release|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release|x64.Build.0 = Release|x64
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release|x86.ActiveCfg = Release|Win32
-		{73FA4AEB-6C38-4121-9C30-C5B0C7041273}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

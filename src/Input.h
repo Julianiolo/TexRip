@@ -16,6 +16,7 @@ public:
 		Action_selectAll,
 		Action_selectLinked,
 		Action_add,
+		Action_remove,
 		Action_undo,
 		Action_save,
 		Action_open,

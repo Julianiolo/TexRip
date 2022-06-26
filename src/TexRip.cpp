@@ -176,6 +176,25 @@ void TexRip::ImgRec2part::draw(float w, float h,float zoomf) {
     drawRecRaw(recDisplay,progress-4,displayColors,zoomf);
 }
 
+bool TexRip::ImgRecSimple::hasSelectedPoint() const {
+    for (size_t i = 0; i < 4; i++) {
+        if (rec.pnts[i].selected)
+            return true;
+    }
+    return false;
+}
+bool TexRip::ImgRec2part::hasSelectedPoint() const {
+    for (size_t i = 0; i < 4; i++) {
+        if (rec.pnts[i].selected)
+            return true;
+    }
+    for (size_t i = 0; i < 4; i++) {
+        if (recDisplay.pnts[i].selected)
+            return true;
+    }
+    return false;
+}
+
 // ###############################################################################################################################
 
 TexRip::ImageRipChildWin::ImageRipChildWin(Texture2D tex_, const char* name, ImGuiWindowFlags flags, bool doAdjZoom) : TextureViewer(tex_,name,flags,doAdjZoom) {
@@ -411,6 +430,10 @@ bool TexRip::ImageSelectionViewer::RectManager::managePoints(const Vector2& mous
                 reRender = true;
             }else if (Input::isActionActive(Input::Action_selectLinked)) { // select linked
                 selectLinked();
+                reRender = true;
+            }
+            else if (Input::isActionActive(Input::Action_remove)) {
+                removeSelectedRects();
                 reRender = true;
             }
         }
@@ -738,6 +761,16 @@ void TexRip::ImageSelectionViewer::RectManager::removeRect(const size_t& id) {
             abort();
     }
     recs.remove(id);
+}
+void TexRip::ImageSelectionViewer::RectManager::removeSelectedRects() {
+    for (auto it = recs.cbegin(); it != recs.cend();) {
+        if (it->second->hasSelectedPoint()) {
+            removeRect((it++)->first);
+        }
+        else {
+            it++;
+        }
+    }
 }
 
 TexRip::ImageSelectionViewer::RectManager::RectPointID TexRip::ImageSelectionViewer::RectManager::getSelPointInd(const Vector2& mousePosTexRel, const float zoomF, bool deselect) {

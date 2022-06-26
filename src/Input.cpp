@@ -88,7 +88,8 @@ inline void Input::initDefaultActionsArr() {
 	setDefaultAction(Action_selectAll, KEY_A, Modifier_None);
 	setDefaultAction(Action_selectLinked, KEY_L, Modifier_None);
 
-	setDefaultAction(Action_add, KEY_A, Modifier_Shift);
+	setDefaultAction(Action_add,    KEY_A, Modifier_Shift);
+	setDefaultAction(Action_remove, KEY_X, Modifier_None);
 
 	setDefaultAction(Action_undo, KEY_Z, Modifier_Ctrl);
 	setDefaultAction(Action_save, KEY_S, Modifier_Ctrl);
@@ -220,12 +221,12 @@ void Input::drawSettingsTable() {
 				ImGui::SameLine();
 				bool isAlreadyDefault = (a.changed.key == a.def.key) && (a.changed.modifiers == a.def.modifiers);
 				if (isAlreadyDefault)
-					ImGui::PushDisabled();
+					ImGui::BeginDisabled();
 				if (ImGui::Button("Default")) {
 					setActionBindingToDefault(i);
 				}
 				if (isAlreadyDefault)
-					ImGui::PopDisabled();
+					ImGui::EndDisabled();
 			}
 			ImGui::EndTable();
 		}
@@ -278,13 +279,13 @@ void Input::ActionKeyCapture::captureKeys() {
 		ImGuiExt::TextColoredCentered(ImVec4(0.1f, 0.9f, 0.2f, 1.0f), captured.keyName.c_str());
 
 		if (!finished)
-			ImGui::PushDisabled();
+			ImGui::BeginDisabled();
 		if (ImGui::Button("Ok", ImVec2(120, 0))) {
 			stopCapture(false);
 			ImGui::CloseCurrentPopup();
 		}
 		if (!finished)
-			ImGui::PopDisabled();
+			ImGui::EndDisabled();
 
 		ImGui::SetItemDefaultFocus();
 		ImGui::SameLine();

@@ -55,6 +55,8 @@ namespace TexRip {
         virtual bool isComplete() const = NULL;
         virtual std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) = NULL;
         virtual void draw(float w, float h,float zoomf) = NULL;
+
+        virtual bool hasSelectedPoint() const = NULL;
     };
     class ImgRecSimple : public ImgRec {
     public:
@@ -75,6 +77,8 @@ namespace TexRip {
         bool isComplete() const override;
         std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) override;
         void draw(float w, float h,float zoomf) override;
+
+        bool hasSelectedPoint() const override;
     };
 
     class ImgRec2part : public ImgRec {
@@ -102,6 +106,8 @@ namespace TexRip {
         bool isComplete() const override;
         std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) override;
         void draw(float w, float h,float zoomf) override;
+
+        bool hasSelectedPoint() const override;
     };
 
     class ImageRipChildWin : public TextureViewer {
@@ -223,6 +229,7 @@ namespace TexRip {
             void selectLinked();
 
             void removeRect(const size_t& id);
+            void removeSelectedRects();
 
             RectPointID getSelPointInd(const Vector2& mousePosTexRel, const float zoomF, bool deselect);
             Vector2 getMeanSelPntPos(int& numRef) const;
