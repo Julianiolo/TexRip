@@ -24,6 +24,10 @@ TexRip::ImgRec::Colors TexRip::ImgRec2part::displayColors = {
     { 100,200,100,255 }, {64, 255, 64, 255}, BLACK, ORANGE
 };
 
+TexRip::ImgRec::~ImgRec() {
+
+}
+
 bool TexRip::Rec::isValidPerspRec() const {
     int sign = 0;
     for (size_t i = 0; i < 4; i++) {
@@ -34,7 +38,7 @@ bool TexRip::Rec::isValidPerspRec() const {
 
         if (sign == 0)
             sign = res >= 0 ? 1 : -1;
-        if (sign >= 0 != res >= 0)
+        if ((sign >= 0) != (res >= 0))
             return false;
     }
     return true;
@@ -226,7 +230,7 @@ TexRip::ImageSelectionViewer::RectManager::PersMat::PersMat() {
 }
 TexRip::ImageSelectionViewer::RectManager::PersMat::~PersMat() {
     if (img.data != NULL) {
-        delete[] img.data;
+        delete[] (float*)img.data;
     }
     if (tex.id != 0) {
         UnloadTexture(tex);
@@ -234,10 +238,10 @@ TexRip::ImageSelectionViewer::RectManager::PersMat::~PersMat() {
 }
 void TexRip::ImageSelectionViewer::RectManager::PersMat::updateWithRecs(const utils::Map<size_t, ImgRec*>& recs, bool inverse) {
     size_t targetLen = recs.size();
-    if (targetLen != img.width) {
+    if (targetLen != (size_t)img.width) {
         img.width = targetLen;
         if (img.data != NULL) {
-            delete[] img.data;
+            delete[] (float*)img.data;
             UnloadTexture(tex);
             tex.id = 0;
         }
@@ -689,7 +693,7 @@ bool TexRip::ImageSelectionViewer::RectManager::selectWithMouse(const Vector2& m
 
     RectPointID pnt = getSelPointInd(mousePosTexRel, zoomF,doDeselect);
 
-    if (pnt.rectID != -1) {
+    if (pnt.rectID != (size_t)-1) {
         if (Input::modCtrl()) { //sel complete rect
             auto& r = recs.get(pnt.rectID);
             for (auto& p : r->rec.pnts)
@@ -801,7 +805,7 @@ TexRip::ImageSelectionViewer::RectManager::RectPointID TexRip::ImageSelectionVie
             p->selected = false;
     }
 
-    if (nearest.rectID != -1) {
+    if (nearest.rectID != (size_t)-1) {
         return nearest;
     }
     else {
@@ -883,7 +887,7 @@ const Texture2D& TexRip::ImageSelectionViewer::RectManager::getInvMatTex() const
 // ###############################################################+
 
 TexRip::ImageSelectionViewer::ImageSelectionViewer(const Texture2D& tex, const char* name, ImGuiWindowFlags flags)
-    : rectManager(), ImageRipChildWin(tex, name, flags) {
+    : ImageRipChildWin(tex, name, flags), rectManager() {
     menuBarOn(true);
 
     rectManager.updateRecMats(Vector2{ (float)tex.width, (float)tex.height });
@@ -957,7 +961,7 @@ void TexRip::ImageSelectionViewer::afterWinDraw() {
 void TexRip::ImageSelectionViewer::drawRaw() {
     ImGui::SetCursorPos({ 0,0 });
     const char* labels[] = { "A","B"};
-    for (size_t i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) {
         if (ImGui::Selectable(labels[i], rectManager.addRectType == i, 0, {100,0}))
             rectManager.addRectType = i;
     }
@@ -1115,7 +1119,7 @@ void TexRip::ImageTargetViewer::rerenderTargetTex(const Texture2D& srcTex, const
 
     Vector2 newSize = { 0,0 };
     bool additionalCond = targetTex.id == 0;
-    if (World2DViewer::doesViewPortNeedResize(targetDim.x, targetDim.y, (float)targetTex.texture.width, (float)targetTex.texture.height, 100, 10, newSize, additionalCond)) {
+    if (World2DViewer::doesViewPortNeedResize(targetDim.x, targetDim.y, (float)targetTex.texture.width, (float)targetTex.texture.height, 100, 10, &newSize, additionalCond)) {
         if (targetTex.id != 0) {
             UnloadRenderTexture(targetTex);
         }
@@ -1311,14 +1315,14 @@ void TexRip::ImageRipperWindow::setTex(Texture2D newTex) {
 
     reRenderOutput();
 }
-void TexRip::ImageRipperWindow::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
+void TexRip::ImageRipperWindow::draw(const Vector2& mousePos, const Vector2& mouseDelta, const Vector2& screenSize) {
     if (parentWinOpen) {
         drawParentWin();
     }
 
-    selWin.draw(mousePos,mouseDelta);
+    selWin.draw(mousePos,mouseDelta, screenSize);
     update();
-    texWin.draw(mousePos,mouseDelta);
+    texWin.draw(mousePos,mouseDelta, screenSize);
     if (!winOpen && !toDelete) {
         if (texWin.editedSinceSaved()) {
             dontYouWantToSave();
@@ -1643,7 +1647,7 @@ void TexRip::TexRipper::draw() {
     }
 
     for (auto& w : wins) {
-        w->draw(GetMousePosition(), mouseDelta);
+        w->draw(GetMousePosition(), mouseDelta, {(float)GetScreenWidth(), (float)GetScreenHeight()});
     }
 
     WinViewManager::updateWinView();
@@ -1761,7 +1765,7 @@ void TexRip::TexRipper::drawSettingsWindow() {
         if (ImGui::Begin("Settings", &settingsWinOpen, 0)) {
             if (ImGui::BeginChild("CategoryChildWin", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.25f, 0), false, 0)) {
                 if (ImGui::BeginListBox("listbox 1", {-1,ImGui::GetContentRegionAvail().y})) {
-                    for (int n = 0; n < SettingsCategories_COUNT; n++)
+                    for (size_t n = 0; n < SettingsCategories_COUNT; n++)
                     {
                         const bool is_selected = (currentSettingCategory == n);
                         if (ImGui::Selectable(settingsCategories[n].c_str(), is_selected, ImGuiSelectableFlags_SelectOnClick))

@@ -39,10 +39,10 @@ public:
 
     float zoomIndependent(float v);
 
-    void draw(const Vector2& mousePos, const Vector2& mouseDelta);
+    void draw(const Vector2& mousePos, const Vector2& mouseDelta, const Vector2& screenSize);
     void queueRerender();
 
-    static bool doesViewPortNeedResize(float needVX, float needVY, float currVX, float currVY, float resizeMargin, float safetyMargin, Vector2& newSize, bool alsoTrigger = false);
+    static bool doesViewPortNeedResize(float needVX, float needVY, float currVX, float currVY, float resizeMargin, float safetyMargin, Vector2* newSize, bool alsoTrigger = false);
 protected:
     virtual void drawWorld(const Vector2& mousePos, const Vector2& mouseDelta);
     virtual void drawMenuBar();

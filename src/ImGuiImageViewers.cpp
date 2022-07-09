@@ -1,4 +1,5 @@
 #include "ImGuiImageViewers.h"
+#include "imgui_internal.h"
 
 #include "raymath.h"
 #include "rlgl.h"
@@ -19,9 +20,7 @@ World2DViewer::World2DViewer(const char* name, ImGuiWindowFlags flags) {
     resetCam();
 }
 World2DViewer::~World2DViewer() {
-    if (renderTex.id != 0) {
-        UnloadRenderTexture(renderTex);
-    }
+    UnloadRenderTexture(renderTex);
 }
 
 void World2DViewer::drawWorld(const Vector2& mousePos, const Vector2& mouseDelta) {
@@ -104,7 +103,7 @@ bool World2DViewer::update(const Vector2& mouseDelta) {
 
     return reRender;
 }
-void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
+void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta, const Vector2& screenSize) {
     if (winProps.winOpen) {
         beforeWinDraw();
 
@@ -132,7 +131,7 @@ void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
             constexpr float resizeMargin = 100;
             Vector2 newSize = { 0,0 };
             bool addCond = renderTex.id == 0;
-            if (doesViewPortNeedResize(size.x, size.y, (float)renderTex.texture.width, (float)renderTex.texture.height, resizeMargin, safetyMargin, newSize, addCond)) { //check if difference in Size is too big
+            if (doesViewPortNeedResize(screenSize.x, screenSize.y, (float)renderTex.texture.width, (float)renderTex.texture.height, resizeMargin, safetyMargin, &newSize, addCond)) { //check if difference in Size is too big
                 Vector2 off;
                 bool renderTexInited = renderTex.id != 0;
                 if (renderTexInited) {
@@ -143,9 +142,8 @@ void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
                 }
                 cam.target += off; //adjust cam to not have it jump on resize
                 cam.offset += off;
-                if (renderTexInited) {
+                if(renderTex.id != 0)
                     UnloadRenderTexture(renderTex);
-                }
                 renderTex = LoadRenderTexture((int)newSize.x, (int)newSize.y);
                 if (!renderTexInited) {
                     renderTexInit();
@@ -155,9 +153,10 @@ void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
             if (reRenderEveryFrame || needsReRender) {
                 updateRenderTex(mousePos,mouseDelta);
             }
-
-            ImGui::SetCursorScreenPos(getTexDrawCursorPos());
-            RLImGuiImageRect(&renderTex.texture, renderTex.texture.width, renderTex.texture.height, { 0,0,(float)renderTex.texture.width,-((float)renderTex.texture.height) });
+            
+            ImVec2 cursor = getTexDrawCursorPos();
+            ImGui::SetCursorScreenPos(cursor);
+            RLImGuiImageRect(&renderTex.texture, size.x, size.y, { cursor.x,cursor.y,size.x,-size.y});
 
             drawRaw();
         }
@@ -167,12 +166,12 @@ void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta) {
     afterWinDraw();
 }
 
-bool World2DViewer::doesViewPortNeedResize(float needVX, float needVY, float currVX, float currVY, float resizeMargin, float safetyMargin, Vector2& newSize, bool alsoTrigger) {
+bool World2DViewer::doesViewPortNeedResize(float needVX, float needVY, float currVX, float currVY, float resizeMargin, float safetyMargin, Vector2* newSize, bool alsoTrigger) {
     if (alsoTrigger ||
         std::min(currVX - needVX, currVY - needVY) < safetyMargin ||
         std::max(currVX - needVX, currVY - needVY) > resizeMargin * 2 + safetyMargin) 
     {
-        newSize = { needVX + resizeMargin + safetyMargin, needVY + resizeMargin + safetyMargin };
+        *newSize = { needVX + resizeMargin + safetyMargin, needVY + resizeMargin + safetyMargin };
         return true;
     }
     return false;
@@ -184,8 +183,7 @@ void World2DViewer::queueRerender() {
 
 ImVec2 World2DViewer::getTexDrawCursorPos() {
     ImVec2 pos = ImGui::GetCursorScreenPos();
-    ImVec2 size = ImGui::GetContentRegionAvail();
-    return { pos.x + size.x / 2 - renderTex.texture.width / 2, pos.y + size.y / 2 - renderTex.texture.height / 2 };
+    return pos;
 }
 
 Vector2 World2DViewer::getPosGlobalToWin(const Vector2& pos) {
@@ -214,7 +212,13 @@ inline void World2DViewer::updateRenderTex(const Vector2& mousePos, const Vector
     needsReRender = false;
     BeginTextureMode(renderTex);
     ClearBackground(BLANK);
+
+    Vector2 off = getPosWinToGlobal({0,0});
+    cam.offset += off;
+
     BeginMode2D(cam);
+
+    
 
     drawWorld(mousePos, mouseDelta);
 
@@ -223,6 +227,8 @@ inline void World2DViewer::updateRenderTex(const Vector2& mousePos, const Vector
 
     EndMode2D();
     EndTextureMode();
+
+    cam.offset -= off;
 }
 
 void World2DViewer::setCamTarget(const Vector2& targ) {

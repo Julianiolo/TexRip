@@ -5,7 +5,27 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) TexRip",
+            "name": "(gdb) TexRip launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/make/DEBUG/TexRip/TexRip.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/make/DEBUG/TexRip/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            //"miDebuggerPath": "",
+            "setupCommands": [
+                {
+                    "description": "Automatische Strukturierung und Einrückung für \"gdb\" aktivieren",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) TexRip build",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/make/DEBUG/TexRip/TexRip.exe",

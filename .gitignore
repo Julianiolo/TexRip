@@ -8,4 +8,4 @@ ignore/*
 projects/VS2019/TexRip/build/*
 projects/VS2019/TexRip/.vs/*
 
-.vscode/*
+/.vscode/*

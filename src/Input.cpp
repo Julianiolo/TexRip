@@ -175,7 +175,7 @@ void Input::drawMouseSelectSwitchPro(MouseAction action){
 }
 
 void Input::drawSettingsTable() {
-	ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Appearing);
+	ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 	if(ImGui::TreeNode("Mouse")){
 		
 		ImGui::TextUnformatted("Select:");
@@ -191,9 +191,9 @@ void Input::drawSettingsTable() {
 	}
 
 	if(ActionKeyCapture::isCapturing())
-		ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Always);
+		ImGui::SetNextItemOpen(true, ImGuiCond_Always);
 	else
-		ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Appearing);
+		ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 	if(ImGui::TreeNode("Keyboard")){
 		ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_PadOuterX | ImGuiTableFlags_BordersV;
 

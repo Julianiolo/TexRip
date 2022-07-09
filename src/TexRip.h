@@ -45,18 +45,20 @@ namespace TexRip {
         Vector2 corrDim;
         int8_t progress = 4;
 
-        virtual bool needsUpdate() const = NULL;
-        virtual void calcPersp(const Vector2& imgDim) = NULL;
+        virtual ~ImgRec();
+
+        virtual bool needsUpdate() const = 0;
+        virtual void calcPersp(const Vector2& imgDim) = 0;
 
         void drawRecRaw(const Rec& rec, int8_t progress_, const Colors& colors, float zoomf);
         void drawRecPersLines(float w, float h,float zoomf);
 
-        virtual uint8_t getType() const = NULL;
-        virtual bool isComplete() const = NULL;
-        virtual std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) = NULL;
-        virtual void draw(float w, float h,float zoomf) = NULL;
+        virtual uint8_t getType() const = 0;
+        virtual bool isComplete() const = 0;
+        virtual std::pair<bool,bool> updateConstruct(const Vector2& mousePosTexRel) = 0;
+        virtual void draw(float w, float h,float zoomf) = 0;
 
-        virtual bool hasSelectedPoint() const = NULL;
+        virtual bool hasSelectedPoint() const = 0;
     };
     class ImgRecSimple : public ImgRec {
     public:
@@ -338,7 +340,7 @@ namespace TexRip {
 
         void loadTex(const char* str);
         void setTex(Texture2D newTex);
-        void draw(const Vector2& mousePos, const Vector2& mouseDelta);
+        void draw(const Vector2& mousePos, const Vector2& mouseDelta, const Vector2& screenSize);
 
         void dockedWinView();
         void oneWinView();
