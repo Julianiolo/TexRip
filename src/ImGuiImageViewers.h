@@ -48,7 +48,7 @@ protected:
     virtual void drawMenuBar();
     virtual void beforeWinDraw();
     virtual void afterWinDraw();
-    virtual void sizeUpdate(ImVec2 size);
+    virtual void sizeUpdate(const Vector2& size);
     virtual void renderTexInit();
     virtual bool ownUpdate(const Vector2& mousePos, const Vector2& mouseDelta);
     virtual void drawRaw();
@@ -68,9 +68,13 @@ private:
     bool isMoving;
     bool menuBarIsOn = false;
 
+    // Cache:
+    Vector2 winStartScreenCursor = { 0, 0 };
+    Vector2 contentSize = { 0, 0 };
+    Vector2 lastWinOff = { 0, 0 };
+
     bool update(const Vector2& mouseDelta);
     void updateRenderTex(const Vector2& mousePos, const Vector2& mouseDelta);
-    ImVec2 getTexDrawCursorPos();
 };
 
 class TextureViewer : public World2DViewer {
@@ -87,7 +91,7 @@ private:
 protected:
     virtual void drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta);
     void drawWorld(const Vector2& mousePos, const Vector2& mouseDelta) override;
-    void sizeUpdate(ImVec2 size) override;
+    void sizeUpdate(const Vector2& size) override;
 
     void reAdjZoom(const Vector2& size);
 public:

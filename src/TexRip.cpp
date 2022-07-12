@@ -115,15 +115,15 @@ void TexRip::ImgRec::drawRecRaw(const Rec& rec, int8_t progress_, const Colors& 
         if (p1.selected && p2.selected) {
             LineColor = colors.lineSel;
         }
-        DrawLineEx(p1.pos, p2.pos, zoomf*1.5f,LineColor);
+        DrawLineEx(p1.pos, p2.pos, 1.5f/zoomf,LineColor);
     }
 
     // draw Points
     constexpr float recW = 4, recH = 4;
     for (int i = 0; i < std::min((int8_t)4, (int8_t)(progress_+1)); i++) {
         DrawRectanglePro(
-            { rec.pnts[i].pos.x, rec.pnts[i].pos.y, zoomf*recW, zoomf*recH },
-            { zoomf*(recW / 2), zoomf*(recH / 2) },
+            { rec.pnts[i].pos.x, rec.pnts[i].pos.y, recW/zoomf, recH/zoomf },
+            { (recW / 2)/zoomf, (recH / 2)/zoomf },
             0, rec.pnts[i].selected ? colors.pntSel : colors.pnt
         );
     }
@@ -131,19 +131,20 @@ void TexRip::ImgRec::drawRecRaw(const Rec& rec, int8_t progress_, const Colors& 
 void TexRip::ImgRec::drawRecPersLines(float w, float h,float zoomf) {
     if (isComplete() && rec.isValidPerspRec()) {
         constexpr float step = 1.0f / 5;
+        constexpr float thick = 2;
         for (float x = step/2; x < 1; x += step) {
             Vector2 p1 = {x*(float)w,          0};
             Vector2 p2 = {x*(float)w, 1*(float)h};
             Vector2 p1Warped = ImageSelectionViewer::getPosPersp(p1, inv_persp);
             Vector2 p2Warped = ImageSelectionViewer::getPosPersp(p2, inv_persp);
-            DrawLineEx(p1Warped, p2Warped, 2, GREEN);
+            DrawLineEx(p1Warped, p2Warped, thick/zoomf, GREEN);
         }
         for (float y = step/2; y < 1; y += step) {
             Vector2 p1 = {0*(float)w, y*(float)h};
             Vector2 p2 = {1*(float)w, y*(float)h};
             Vector2 p1Warped = ImageSelectionViewer::getPosPersp(p1, inv_persp);
             Vector2 p2Warped = ImageSelectionViewer::getPosPersp(p2, inv_persp);
-            DrawLineEx(p1Warped, p2Warped, 2, GREEN);
+            DrawLineEx(p1Warped, p2Warped, thick/zoomf, GREEN);
         }
     }
 }
@@ -912,7 +913,7 @@ bool TexRip::ImageSelectionViewer::ownUpdate(const Vector2& mousePos, const Vect
 }
 void TexRip::ImageSelectionViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
     for (auto& r : rectManager.getRecs()) {
-        r.second->draw(tex.width,tex.height,1/getZoom());
+        r.second->draw(tex.width,tex.height,getZoom());
     }
     
 #if 0
@@ -1622,18 +1623,16 @@ void TexRip::TexRipper::draw() {
     WinViewManager::updateBefore();
 
     if (IsFileDropped()) {
-        char** paths;
-        int count;
-        paths = GetDroppedFiles(&count);
-        for (int i = 0; i < count; i++) {
-            char* path = paths[i];
+        FilePathList list = LoadDroppedFiles();
+        for (int i = 0; i < list.count; i++) {
+            char* path = list.paths[i];
             DroppedFile f;
             f.name = GetFileName(path);
             f.ext = GetFileExtension(f.name.c_str());
             f.path = path;
             droppedFileNames.push_back(f);
         }
-        ClearDroppedFiles();
+        UnloadDroppedFiles(list);
     }
 
     if (!wins.empty()) { //delete closed Wins

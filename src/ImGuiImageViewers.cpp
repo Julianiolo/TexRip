@@ -35,7 +35,7 @@ void World2DViewer::beforeWinDraw(){
 void World2DViewer::afterWinDraw() {
 
 }
-void World2DViewer::sizeUpdate(ImVec2 size) {
+void World2DViewer::sizeUpdate(const Vector2& size) {
 
 }
 void World2DViewer::renderTexInit() {
@@ -66,13 +66,12 @@ void World2DViewer::menuBarOn(bool on) {
 
 bool World2DViewer::update(const Vector2& mouseDelta) {
     bool reRender = false;
-
-    ImVec2 size = ImGui::GetContentRegionAvail();
+    
     ImVec2 pos = ImGui::GetCursorScreenPos();
 
     Vector2 localMousePos = getPosGlobalToWin(GetMousePosition());//GetScreenToWorld2D(mousePos, cam);
 
-    if (CheckCollisionPointRec({ (float)GetMouseX(), (float)GetMouseY() }, { pos.x,pos.y,size.x,size.y })) {
+    if (CheckCollisionPointRec({ (float)GetMouseX(), (float)GetMouseY() }, { pos.x,pos.y,contentSize.x,contentSize.y })) {
         float add = (GetMouseWheelMove() * 0.2f) * cam.zoom;
         if (add != 0 && cam.zoom + add > 0) {
             setCamTarget(localMousePos);
@@ -110,11 +109,33 @@ void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta, con
         ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_FirstUseEver);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         if (ImGui::Begin(winProps.windowName.c_str(), winProps.winOpenPtr, winProps.flags | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+            {
+                Vector2 winStartScreenCursorNew = Vector2{ ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y };
+                if (winStartScreenCursor != winStartScreenCursorNew) {
+                    needsReRender = true;
+                }
+                winStartScreenCursor = winStartScreenCursorNew;
+            }
+            
             if (menuBarIsOn) {
                 ImGui::PopStyleVar();
                 drawMenuBar();
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             }
+
+            {
+                ImVec2 size = ImGui::GetContentRegionAvail();
+                Vector2 contentSizeNew = { size.x, size.y };
+                if (contentSize != contentSizeNew) {
+                    needsReRender = true;
+                }
+                contentSize = contentSizeNew;
+            }
+
+            Vector2 winCenter = winStartScreenCursor + contentSize/2;
+            Vector2 winOff = renderTexSize()/2 - winCenter;
+            cam.offset += lastWinOff;
+            cam.offset -= winOff;
 
             winProps.isWinHovered = ImGui::IsWindowHovered();
             winProps.dockID = ImGui::GetWindowDockID();
@@ -123,42 +144,44 @@ void World2DViewer::draw(const Vector2& mousePos, const Vector2& mouseDelta, con
                 needsReRender = true;
             }
 
-            ImVec2 size = ImGui::GetContentRegionAvail();
+            sizeUpdate(contentSize);
 
-            sizeUpdate(size);
-
-            constexpr float safetyMargin = 20;
-            constexpr float resizeMargin = 100;
-            Vector2 newSize = { 0,0 };
-            bool addCond = renderTex.id == 0;
-            if (doesViewPortNeedResize(screenSize.x, screenSize.y, (float)renderTex.texture.width, (float)renderTex.texture.height, resizeMargin, safetyMargin, &newSize, addCond)) { //check if difference in Size is too big
-                Vector2 off;
-                bool renderTexInited = renderTex.id != 0;
-                if (renderTexInited) {
-                    off = { (newSize.x - renderTex.texture.width) / 2, (newSize.y - renderTex.texture.height) / 2 };
+            {
+                constexpr float safetyMargin = 20;
+                constexpr float resizeMargin = 100;
+                Vector2 newSize = { 0,0 };
+                bool addCond = renderTex.id == 0;
+                if (doesViewPortNeedResize(screenSize.x, screenSize.y, (float)renderTex.texture.width, (float)renderTex.texture.height, resizeMargin, safetyMargin, &newSize, addCond)) { //check if difference in Size is too big
+                    Vector2 off;
+                    bool renderTexInited = renderTex.id != 0;
+                    if (renderTexInited) {
+                        off = { (newSize.x - renderTex.texture.width) / 2, (newSize.y - renderTex.texture.height) / 2 };
+                    }
+                    else {
+                        off = { 0,0 };
+                    }
+                    cam.target += off; //adjust cam to not have it jump on resize
+                    cam.offset += off;
+                    if(renderTex.id != 0)
+                        UnloadRenderTexture(renderTex);
+                    renderTex = LoadRenderTexture((int)newSize.x, (int)newSize.y);
+                    if (!renderTexInited) {
+                        renderTexInit();
+                    }
+                    needsReRender = true;
                 }
-                else {
-                    off = { 0,0 };
-                }
-                cam.target += off; //adjust cam to not have it jump on resize
-                cam.offset += off;
-                if(renderTex.id != 0)
-                    UnloadRenderTexture(renderTex);
-                renderTex = LoadRenderTexture((int)newSize.x, (int)newSize.y);
-                if (!renderTexInited) {
-                    renderTexInit();
-                }
-                needsReRender = true;
             }
+            
             if (reRenderEveryFrame || needsReRender) {
                 updateRenderTex(mousePos,mouseDelta);
             }
             
-            ImVec2 cursor = getTexDrawCursorPos();
-            ImGui::SetCursorScreenPos(cursor);
-            RLImGuiImageRect(&renderTex.texture, size.x, size.y, { cursor.x,cursor.y,size.x,-size.y});
+            ImVec2 cursor = ImGui::GetCursorScreenPos();
+            RLImGuiImageRect(&renderTex.texture, contentSize.x, contentSize.y, { cursor.x,cursor.y,contentSize.x,-contentSize.y});
 
             drawRaw();
+
+            lastWinOff = winOff;
         }
         ImGui::End();
         ImGui::PopStyleVar();
@@ -181,20 +204,11 @@ void World2DViewer::queueRerender() {
     needsReRender = true;
 }
 
-ImVec2 World2DViewer::getTexDrawCursorPos() {
-    ImVec2 pos = ImGui::GetCursorScreenPos();
-    return pos;
-}
-
 Vector2 World2DViewer::getPosGlobalToWin(const Vector2& pos) {
-    ImVec2 texDrawPos = getTexDrawCursorPos();
-    Vector2 texDrawPosV = { texDrawPos.x, texDrawPos.y };
-    return GetScreenToWorld2D(Vector2Subtract(pos, texDrawPosV), cam);
+    return GetScreenToWorld2D(pos, cam);
 }
 Vector2 World2DViewer::getPosWinToGlobal(const Vector2& pos) {
-    ImVec2 texDrawPos = getTexDrawCursorPos();
-    Vector2 texDrawPosV = { texDrawPos.x, texDrawPos.y };
-    return Vector2Add(GetWorldToScreen2D(pos, cam), texDrawPosV);
+    return GetWorldToScreen2D(pos, cam);
 }
 
 Vector2 World2DViewer::getOffGlobalToWin(const Vector2& pos) {
@@ -213,22 +227,12 @@ inline void World2DViewer::updateRenderTex(const Vector2& mousePos, const Vector
     BeginTextureMode(renderTex);
     ClearBackground(BLANK);
 
-    Vector2 off = getPosWinToGlobal({0,0});
-    cam.offset += off;
-
     BeginMode2D(cam);
-
-    
 
     drawWorld(mousePos, mouseDelta);
 
-    //DrawRectangle(0, 0, 100, 100, RED);
-    //DrawRectangle(renderTex.texture.width/2, renderTex.texture.height/2, 100, 100, PINK);
-
     EndMode2D();
     EndTextureMode();
-
-    cam.offset -= off;
 }
 
 void World2DViewer::setCamTarget(const Vector2& targ) {
@@ -237,7 +241,7 @@ void World2DViewer::setCamTarget(const Vector2& targ) {
     cam.offset += off * cam.zoom;
 }
 void World2DViewer::resetCam() {
-    cam.offset = { 0,0 };
+    cam.offset = lastWinOff * -1;
     cam.target = { 0,0 };
     cam.zoom = 1;
     cam.rotation = 0;
@@ -322,7 +326,7 @@ void TextureViewer::drawWorld(const Vector2& mousePos, const Vector2& mouseDelta
 void TextureViewer::drawOverlay(const Vector2& mousePos, const Vector2& mouseDelta) {
     
 }
-void TextureViewer::sizeUpdate(ImVec2 size) {
+void TextureViewer::sizeUpdate(const Vector2& size) {
     if (renderTexReady() && adjZoom) {
         reAdjZoom({ size.x,size.y });
         queueRerender();
